@@ -18,7 +18,7 @@ def remove_ads(d: dict):
     if d['id'] == 'ad':
         d.clear()
 
-
+# basically takes the relevant details from description to label the data 
 def json_cleaner(name: str):
     save_path = "D:\\UNI\\FinalProject\\scrape\\images\\"
     files = [f for f in os.listdir(save_path) if os.path.isfile(os.path.join(save_path, f))]
@@ -34,12 +34,18 @@ def json_cleaner(name: str):
         if irr_id in files:
             temp_dict['id'] = irr_id
             desc = i['description'].lower()
-            if ('eight' in desc) or ('achtstrahliger' in desc):
-                temp_dict['label'] = 8
+            # the star rayes labeling
+            if ('eight' in desc) or ('achtstrahliger' in desc): # for german desc (didn't have german in six)
+                temp_dict['rayes'] = 8
             elif 'six' in desc:
-                temp_dict['label'] = 6
+                temp_dict['rayes'] = 6
             else:
-                temp_dict['label'] = 0
+                temp_dict['rayes'] = 0
+            # the diadem labeling
+            if 'diadem' in desc:
+                temp_dict['diadem'] = 1
+            else:
+                temp_dict['diadem'] = 0
         if temp_dict != {}:
             dict_list.append(temp_dict)
 
