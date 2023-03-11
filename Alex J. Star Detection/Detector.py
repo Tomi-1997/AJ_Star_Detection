@@ -8,6 +8,8 @@ IMG_WIDTH = IMG_HEIGHT
 CHANNELS = 3
 
 LABELS = [6, 8]
+TEST_SIZE = 0.5
+
 
 def balance_data():
     """Clones data, while rotating it until there is an even number of samples with different labels."""
@@ -23,5 +25,22 @@ def balance_data():
         # Save rotated images
         break
 
+def get_data():
+    """Returns a tuple of data values (tensor) and labels"""
+    pass
+
+def get_model():
+    pass
+
+def train_model(mdl):
+    pass
+
 if __name__ == '__main__':
     balance_data()
+
+    data_val, data_lab = get_data()
+    X_train, X_val, Y_train, Y_val = train_test_split(data_val,
+                                                      data_lab,
+                                                      test_size = TEST_SIZE)
+    model = get_model()
+    train_model(mdl = model)
