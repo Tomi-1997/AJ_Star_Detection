@@ -29,7 +29,10 @@ def get_data():
     """Returns a tuple of data values (tensor) and labels"""
     pass
 
-def get_model():
+def get_pre_trained_model():
+    pass
+
+def get_CNN_model():
     pass
 
 def train_model(mdl):
@@ -42,5 +45,5 @@ if __name__ == '__main__':
     X_train, X_val, Y_train, Y_val = train_test_split(data_val,
                                                       data_lab,
                                                       test_size = TEST_SIZE)
-    model = get_model()
+    model = get_CNN_model()
     train_model(mdl = model)
