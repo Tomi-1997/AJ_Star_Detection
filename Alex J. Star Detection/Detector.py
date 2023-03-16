@@ -118,6 +118,7 @@ def balance_data(use_original_only:bool, csv_name:str):
         cv2.imwrite(curr_name + '.jpg', trans_image)
 
 def get_label(file_name):
+    """Returns the label (6 or 8) of a sample"""
     index = DATA_FILENAME.index(file_name)
     return DATA_LABEL[index]
 
@@ -132,10 +133,11 @@ def get_label_vec(file_name):
   return one_hot
 
 def fname_to_path(fname):
+    """Returns the same filename but with a prefix of the path, and a postfix .jpg"""
     return DATA_PATH + fname + '.jpg' if not fname.endswith('.jpg') else DATA_PATH + fname
 
 def decode_img(img):
-  """Returns a tensor from a given image"""
+  """Returns a tensor from a given, resized image"""
   img = tf.io.decode_jpeg(img, channels = CHANNELS)
 
   # plt.imshow(img)
@@ -159,6 +161,7 @@ def tensor_to_image(tensor):
     return Image.fromarray(tensor)
 
 def image_to_tensor(file_name, star):
+    """Attempts to find image, and then returns a tensor from the resized image."""
     path = fname_to_path(file_name)
     if not star:
         path = file_name
@@ -172,7 +175,7 @@ def image_to_tensor(file_name, star):
     return img
 
 def process_path(file_name):
-    """Returns a tuple of (Tensor, label) from a given filename."""
+    """(Unused) Returns a tuple of (Tensor, label) from a given filename."""
     label = get_label_vec(file_name)
     return image_to_tensor(file_name), label
 
@@ -188,6 +191,7 @@ def get_data():
     return x, y
 
 def get_CNN_model():
+    """Returns a CNN model using tf2 and keras."""
     import keras
     from tensorflow.keras import layers
     from keras.utils import to_categorical
@@ -238,6 +242,7 @@ def train_model(model):
               validation_data=validate)
 
 def plot_history(history):
+    """Plots two graphs, one for accuracy, and one for loss. Both depicting training and validation information."""
     fig = plt.figure()
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
