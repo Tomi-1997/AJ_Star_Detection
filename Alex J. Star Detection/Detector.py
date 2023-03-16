@@ -98,19 +98,20 @@ def balance_data(use_original_only:bool, csv_name:str):
             available = curr_name + '.jpg' not in fnames
             curr_index += 1
 
-        # Read previous attributes (rays, daidem)
-        with open(PATH + csv_name, newline='') as csvfile:
-            spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
-            for row in spamreader:
-                id, rays, circle = row[0].split(SEP)
-                if rnd_id == id: # Found relevant row
-                    break
-
-        # Write new image id with same attributes
-        with open(PATH + csv_name, 'a', newline='') as csvfile:
-            spamwriter = csv.writer(csvfile, delimiter=SEP,
-                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            spamwriter.writerow([curr_name, rays, circle])
+        ## Write in data.csv the new clone, not needed if data is loaded directly from directory. ##
+        # # Read previous attributes (rays, daidem)
+        # with open(PATH + csv_name, newline='') as csvfile:
+        #     spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+        #     for row in spamreader:
+        #         id, rays, circle = row[0].split(SEP)
+        #         if rnd_id == id: # Found relevant row
+        #             break
+        #
+        # # Write new image id with same attributes
+        # with open(PATH + csv_name, 'a', newline='') as csvfile:
+        #     spamwriter = csv.writer(csvfile, delimiter=SEP,
+        #                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        #     spamwriter.writerow([curr_name, rays, circle])
 
         # Save image in the data\star directory.
         os.chdir(curr_dir)
