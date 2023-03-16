@@ -21,6 +21,16 @@ for id, label in zip(DATA['id'], DATA['rays']):
 
 TRAIN_SIZE = 0.5
 
+def change_brightness(img, value=30):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    h, s, v = cv2.split(hsv)
+    v = cv2.add(v,value)
+    v[v > 255] = 255
+    v[v < 0] = 0
+    final_hsv = cv2.merge((h, s, v))
+    img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+    return img
+
 def balance_data(use_original_only:bool, csv_name:str):
     """Clones transformed data, there is an even number of samples with different labels.
     Appends cloned data information to data.csv"""
@@ -46,7 +56,12 @@ def balance_data(use_original_only:bool, csv_name:str):
     # Do it until there is the same amount of pictures for both of the classes.
     for k in range(label_counter[most_common] - label_counter[least_common]):
         rnd_id = str(random.sample(kernel, 1)[0]) # Get random sample to clone
-        image = cv2.imread(DATA_PATH + rnd_id + ".jpg")
+        label = get_label(rnd_id)
+        label = str(label)
+
+        curr_dir = DATA_PATH + label + "\\"
+        image = cv2.imread(curr_dir + rnd_id + ".jpg")
+        image = change_brightness(image, value= 40 - random.randint(0, 80))  # increases
 
         # dividing height and width by 2 to get the center of the image
         height, width = image.shape[:2]
@@ -68,10 +83,14 @@ def balance_data(use_original_only:bool, csv_name:str):
         rotated_image = cv2.warpAffine(src = image, M = rotate_matrix, dsize = (width, height))
         trans_image = cv2.warpAffine(src = rotated_image, M = trans_matrix, dsize = (width, height))
 
+        # Show image while changing it.
+        # plt.imshow(trans_image)
+        # plt.show()
+
         # Get available name
         curr_index = 1
         available = False
-        fnames = os.listdir(DATA_PATH)
+        fnames = os.listdir(curr_dir)
         while not available:
 
             ## Iterate over [aug_6rays_1, aug_6rays_2, ...] and get the lateast aug_6rays_<x> to save it
@@ -94,10 +113,14 @@ def balance_data(use_original_only:bool, csv_name:str):
             spamwriter.writerow([curr_name, rays, circle])
 
         # Save image in the data\star directory.
-        os.chdir(DATA_PATH)
+        os.chdir(curr_dir)
         cv2.imwrite(curr_name + '.jpg', trans_image)
 
 def get_label(file_name):
+    index = DATA_FILENAME.index(file_name)
+    return DATA_LABEL[index]
+
+def get_label_vec(file_name):
   # Get label from file name.
   index = DATA_FILENAME.index(file_name)
   label = DATA_LABEL[index]
@@ -108,7 +131,7 @@ def get_label(file_name):
   return one_hot
 
 def fname_to_path(fname):
-    return DATA_PATH + fname + '.jpg'
+    return DATA_PATH + fname + '.jpg' if not fname.endswith('.jpg') else DATA_PATH + fname
 
 def decode_img(img):
   """Returns a tensor from a given image"""
@@ -134,18 +157,27 @@ def tensor_to_image(tensor):
         tensor = tensor[0]
     return Image.fromarray(tensor)
 
-def image_to_tensor(file_name):
-    img = tf.io.read_file(fname_to_path(file_name))
+def image_to_tensor(file_name, star):
+    path = fname_to_path(file_name)
+    if not star:
+        path = file_name
+    try:
+        img = tf.io.read_file(path)
+    except Exception as e:
+        print(e)
+        print(f'{file_name} not found.')
+        return None
     img = decode_img(img)
     return img
 
 def process_path(file_name):
     """Returns a tuple of (Tensor, label) from a given filename."""
-    label = get_label(file_name)
+    label = get_label_vec(file_name)
     return image_to_tensor(file_name), label
 
 def get_data():
-    """Returns a tuple of data values (tensor) and labels"""
+    """[Unused anymore, from manual loading swithced to keras loading from directory]
+    Returns a tuple of data values (tensor) and labels"""
     x = []
     y = []
     for fname in DATA_FILENAME:
@@ -156,31 +188,33 @@ def get_data():
 
 def get_CNN_model():
     import keras
+    from tensorflow.keras import layers
     from keras.utils import to_categorical
     from keras.models import Sequential
     from keras.layers import Dense, Dropout, Flatten, GlobalMaxPooling2D
-    from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
-    from keras.losses import categorical_crossentropy
+    from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, SpatialDropout2D
 
-    input_shape = (IMG_H, IMG_W, CHANNELS)
-    cnn = Sequential()
+    z = 0.05
+    cnn = tf.keras.Sequential([
+        layers.RandomZoom(z),
+        layers.RandomContrast(z),
+        layers.RandomBrightness(factor=z),
 
-    ker = (5, 5)
-    cnn.add(Conv2D(8, kernel_size=ker, activation='relu', input_shape=input_shape))
-    cnn.add(BatchNormalization())
-    cnn.add(MaxPooling2D())
-    cnn.add(Dropout(0.25))
+        Conv2D(8, 3, padding='same', activation='relu'), MaxPooling2D(),
+        Conv2D(16, 3, padding='same', activation='relu'), MaxPooling2D(),
+        Conv2D(32, 3, padding='same', activation='relu'), MaxPooling2D(),
+        Conv2D(64, 3, padding='same', activation='relu'), MaxPooling2D(),
 
-    cnn.add(Conv2D(16, kernel_size=ker, activation='relu', input_shape=input_shape))
-    cnn.add(BatchNormalization())
-    cnn.add(MaxPooling2D())
-    cnn.add(Dropout(0.25))
+        Flatten(),
 
-    cnn.add(GlobalMaxPooling2D())
-    cnn.add(Dense(len(LABELS), activation='softmax'))
-    cnn.compile(loss=keras.losses.binary_crossentropy,
-              optimizer=keras.optimizers.Adam(),
-              metrics=['accuracy'])
+        layers.Dense(128, activation='relu'), Dropout(0.25),
+        Dense(len(LABELS), activation='softmax')
+    ])
+
+    cnn.compile(optimizer='adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+                  metrics=['accuracy'])
+
     return cnn
 
 def get_pre_trained_model():
@@ -188,19 +222,19 @@ def get_pre_trained_model():
 
 def train_model(model):
     from sklearn.model_selection import train_test_split
-    X, y = get_data()
-    X_train, X_val, Y_train, Y_val = train_test_split(X, y, train_size=TRAIN_SIZE, random_state=2)
-    X_train = tf.convert_to_tensor(X_train)
-    Y_train = tf.convert_to_tensor(Y_train)
-    X_val = tf.convert_to_tensor(X_val)
-    Y_val = tf.convert_to_tensor(Y_val)
+    import keras.utils
 
-    return model.fit(x= X_train, y= Y_train,
+    train, validate = keras.utils.image_dataset_from_directory(DATA_PATH,
+                                                               image_size = (IMG_H, IMG_W),
+                                                               validation_split = 1-TRAIN_SIZE,
+                                                               subset='both',
+                                                               seed = 2)
+    return model.fit(train,
               shuffle=True,
-              batch_size=32,
-              epochs=200,
+              batch_size=16,
+              epochs=50,
               verbose=2,  ## Print info
-              validation_data=(X_val, Y_val))
+              validation_data=validate)
 
 def plot_history(history):
     fig = plt.figure()
@@ -223,10 +257,11 @@ def plot_history(history):
     plt.show()
     plt.show()
 
-def predict(fname):
-    test_img = [image_to_tensor(fname)]
-    res = model.predict(tf.convert_to_tensor(test_img))
+def predict(fname, star=True):
+    test_img = [image_to_tensor(fname, star)]
+    res = model.predict(tf.convert_to_tensor(test_img), verbose=0)
     ans = res.argmax(axis=-1)[0]
+    print(res)
     print(f'Guess : {LABELS[ans]} rays.')
 
 if __name__ == '__main__':
@@ -234,14 +269,15 @@ if __name__ == '__main__':
     model = get_CNN_model()
     history = train_model(model = model)
     plot_history(history)
+
     print("6:")
-    for fname in ['7356426', '7356427', '9065419', '10094593']:
-        predict(fname=fname)
+    for fname in ['7356426', '7356427', '9065419', '1342054']:
+        predict(fname='6\\'+fname)
 
     print("8:")
-    for fname in ['7903675', '6829257', '4585699']:
-        predict(fname=fname)
+    for fname in ['3976933', '3978221', '3960343', '8488211']:
+        predict(fname='8\\'+fname)
 
-    # print('?:')
-    # for fname in ['8815735', '9674744', 'image00087']:
-    #     predict(fname=fname)
+    print("?:")
+    for fname in os.listdir(PATH + 'data\\unsure\\'):
+        predict(fname=PATH + 'data\\unsure\\' + fname, star=False)
