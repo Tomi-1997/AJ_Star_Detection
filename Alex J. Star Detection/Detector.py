@@ -1,6 +1,20 @@
 import os, tensorflow as tf, matplotlib.pyplot as plt
 import random, pandas as pd, cv2, numpy as np, csv
 from PIL import Image
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import train_test_split
+import keras
+import keras.utils
+from keras import layers
+from tensorflow.keras import layers
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten, GlobalMaxPooling2D
+from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, SpatialDropout2D
+from keras.layers import Input, GlobalMaxPooling2D, Dropout, Dense, Flatten
+from keras.applications import VGG19
+from keras.applications.vgg19 import preprocess_input
+from sklearn.model_selection import train_test_split
 
 PATH = 'C:\\Users\\tomto\\Desktop\\FINAL\\'
 DATA_PATH = PATH + 'data\\star\\'
@@ -16,8 +30,9 @@ DATA_FILENAME = []
 DATA_LABEL = []
 
 for id, label in zip(DATA['id'], DATA['rays']):
-    DATA_FILENAME.append(id)
-    DATA_LABEL.append(label)
+    if label != 0:
+        DATA_FILENAME.append(id)
+        DATA_LABEL.append(label)
 
 TRAIN_SIZE = 0.5
 
@@ -134,7 +149,10 @@ def get_label_vec(file_name):
 
 def fname_to_path(fname):
     """Returns the same filename but with a prefix of the path, and a postfix .jpg"""
-    return DATA_PATH + fname + '.jpg' if not fname.endswith('.jpg') else DATA_PATH + fname
+    index = DATA_FILENAME.index(fname)
+    label = DATA_LABEL[index]
+    suffix = fname + '.jpg' if not fname.endswith('.jpg') else fname
+    return f'{DATA_PATH}{label}\\{suffix}'
 
 def decode_img(img):
   """Returns a tensor from a given, resized image"""
@@ -160,7 +178,7 @@ def tensor_to_image(tensor):
         tensor = tensor[0]
     return Image.fromarray(tensor)
 
-def image_to_tensor(file_name, star):
+def image_to_tensor(file_name, star=True):
     """Attempts to find image, and then returns a tensor from the resized image."""
     path = fname_to_path(file_name)
     if not star:
@@ -185,20 +203,15 @@ def get_data():
     x = []
     y = []
     for fname in DATA_FILENAME:
-        tens, lab = process_path(file_name=fname)
+        temp = process_path(file_name=fname)
+        tens = temp[0]
+        lab = temp[1]
         x.append(tens)
         y.append(lab)
     return x, y
 
 def get_CNN_model():
     """Returns a CNN model using tf2 and keras."""
-    import keras
-    from tensorflow.keras import layers
-    from keras.utils import to_categorical
-    from keras.models import Sequential
-    from keras.layers import Dense, Dropout, Flatten, GlobalMaxPooling2D
-    from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, SpatialDropout2D
-
     z = 0.05
     cnn = tf.keras.Sequential([
         layers.RandomZoom(z),
@@ -221,23 +234,41 @@ def get_CNN_model():
                   metrics=['accuracy'])
 
     return cnn
+"""
+https://towardsdatascience.com/transfer-learning-in-tensorflow-9e4f7eae3bb4
 
-def get_pre_trained_model():
-    pass
+"""
+def vgg_model():
+    vgg19 = VGG19(weights='imagenet', include_top=False, input_shape=(IMG_H, IMG_W, CHANNELS), classes=len(LABELS))
+    for layer in vgg19.layers:
+        layer.trainable = False
+
+    input = Input(shape=(IMG_H, IMG_W, CHANNELS), name='input')
+    x = vgg19(input, training=False)
+    x = GlobalMaxPooling2D()(x)
+    # x = Dense(128, activation = 'relu')(x)
+    # x = Dropout(0.25)(x)
+    outputs = Dense(len(LABELS), activation = 'softmax')(x)
+
+    model = keras.models.Model(input, outputs)
+
+    # Compile the model
+    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+                   optimizer=keras.optimizers.Adam(),
+                   metrics=['accuracy'])
+
+    return model
 
 def train_model(model):
-    from sklearn.model_selection import train_test_split
-    import keras.utils
-
     train, validate = keras.utils.image_dataset_from_directory(DATA_PATH,
+                                                               shuffle=False,
                                                                image_size = (IMG_H, IMG_W),
                                                                validation_split = 1-TRAIN_SIZE,
                                                                subset='both',
                                                                seed = 2)
     return model.fit(train,
               shuffle=True,
-              batch_size=16,
-              epochs=50,
+              epochs=10,
               verbose=2,  ## Print info
               validation_data=validate)
 
@@ -263,27 +294,59 @@ def plot_history(history):
     plt.show()
     plt.show()
 
-def predict(fname, star=True):
+def predict(model, fname, star=True):
     test_img = [image_to_tensor(fname, star)]
     res = model.predict(tf.convert_to_tensor(test_img), verbose=0)
     ans = res.argmax(axis=-1)[0]
     print(res)
     print(f'Guess : {LABELS[ans]} rays.')
 
+def confusion_matrix_clf(model):
+    x, y = get_data()
+
+    predictions = model.predict(tf.convert_to_tensor(x), verbose=0)
+    predictions = [LABELS[i] for i in predictions.argmax(axis=-1)]
+    real = [LABELS[i.index(True)] for i in y]
+
+    wrong_fnames = []
+    for i in range(len(predictions)):
+        if predictions[i] != real[i]:
+            wrong_fnames.append(DATA_FILENAME[i])
+
+    cm = confusion_matrix(real, predictions)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=LABELS)
+    disp.plot()
+    plt.show()
+
+    return wrong_fnames
+
+def show_images(img_list):
+    for img in img_list:
+        curr_dir = DATA_PATH + str(get_label(img)) + "\\"
+        plt.imshow(cv2.imread(curr_dir + img + ".jpg"))
+        plt.title("File " + img + " , Label:" + str(get_label(img)))
+        plt.show()
+
 if __name__ == '__main__':
     # balance_data(use_original_only = True, csv_name = 'data.csv')
-    model = get_CNN_model()
-    history = train_model(model = model)
+    # model = get_CNN_model()
+    model = vgg_model()
+
+    history = train_model(model)
     plot_history(history)
 
-    print("6:")
-    for fname in ['7356426', '7356427', '9065419', '1342054']:
-        predict(fname='6\\'+fname)
+    failures = confusion_matrix_clf(model)
+    show_images(failures)
 
-    print("8:")
-    for fname in ['3976933', '3978221', '3960343', '8488211']:
-        predict(fname='8\\'+fname)
+    #
+    # print("6:")
+    # for fname in ['7356426', '7356427', '9065419', '1342054']:
+    #     predict(model, fname=fname)
+    #
+    # print("8:")
+    # for fname in ['3976933', '3978221', '3960343', '8488211']:
+    #     predict(model, fname=fname)
 
-    print("?:")
-    for fname in os.listdir(PATH + 'data\\unsure\\'):
-        predict(fname=PATH + 'data\\unsure\\' + fname, star=False)
+    # print("?:")
+    # for fname in os.listdir(PATH + 'data\\unsure\\'):
+    #     predict(model, fname=PATH + 'data\\unsure\\' + fname, star=False)
