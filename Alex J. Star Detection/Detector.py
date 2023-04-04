@@ -3,21 +3,26 @@ import random, pandas as pd, cv2, numpy as np, csv
 from PIL import Image
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split
+
 import keras
 import keras.utils
+from keras.utils import to_categorical
+from keras import regularizers
+
 from keras import layers
 from tensorflow.keras import layers
-from keras.utils import to_categorical
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, GlobalMaxPooling2D
+from keras.layers import Dense, Dropout, Flatten, GlobalAveragePooling2D
 from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, SpatialDropout2D
 from keras.layers import Input, GlobalMaxPooling2D, Dropout, Dense, Flatten
+
 from keras.applications import VGG19
 from keras.applications.vgg19 import preprocess_input
+
+from keras.models import Sequential
 from sklearn.model_selection import train_test_split
 
 PATH = 'C:\\Users\\tomto\\Desktop\\FINAL\\'
-DATA_PATH = PATH + 'data\\star\\'
+DATA_PATH = PATH + 'data\\star_side\\'
 SEP = ';'
 DATA = pd.read_csv(PATH + '\\data.csv', sep=SEP)
 
@@ -212,42 +217,46 @@ def get_data():
 
 def get_CNN_model():
     """Returns a CNN model using tf2 and keras."""
-    z = 0.05
+    z = 0.01
+    reg = None # regularizers.l2(0.0001)
+
     cnn = tf.keras.Sequential([
-        layers.RandomZoom(z),
-        layers.RandomContrast(z),
-        layers.RandomBrightness(factor=z),
 
-        Conv2D(8, 3, padding='same', activation='relu'), MaxPooling2D(),
-        Conv2D(16, 3, padding='same', activation='relu'), MaxPooling2D(),
-        Conv2D(32, 3, padding='same', activation='relu'), MaxPooling2D(),
-        Conv2D(64, 3, padding='same', activation='relu'), MaxPooling2D(),
+        # layers.RandomZoom(z),
+        # layers.RandomContrast(z),
+        # layers.RandomBrightness(factor=z),
+        # layers.RandomRotation(factor=(-z, z)),
 
+        Conv2D(64, 3, activation='relu'),
+        MaxPooling2D(),
         Flatten(),
 
-        layers.Dense(128, activation='relu'), Dropout(0.25),
+        layers.Dense(64, activation='relu', kernel_regularizer = reg),
+        Dropout(0.25),
         Dense(len(LABELS), activation='softmax')
     ])
 
-    cnn.compile(optimizer='adam',
+    cnn.compile(optimizer='rmsprop',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(),
                   metrics=['accuracy'])
 
     return cnn
+
 """
 https://towardsdatascience.com/transfer-learning-in-tensorflow-9e4f7eae3bb4
 
 """
 def vgg_model():
-    vgg19 = VGG19(weights='imagenet', include_top=False, input_shape=(IMG_H, IMG_W, CHANNELS), classes=len(LABELS))
+    vgg19 = VGG19(weights='imagenet', include_top=False,
+                  input_shape=(IMG_H, IMG_W, CHANNELS), classes=len(LABELS))
     for layer in vgg19.layers:
         layer.trainable = False
 
     input = Input(shape=(IMG_H, IMG_W, CHANNELS), name='input')
     x = vgg19(input, training=False)
-    x = GlobalMaxPooling2D()(x)
-    # x = Dense(128, activation = 'relu')(x)
-    # x = Dropout(0.25)(x)
+    x = Flatten()(x)
+    x = Dense(128, activation='relu')(x)
+    x = Dropout(0.5)(x)
     outputs = Dense(len(LABELS), activation = 'softmax')(x)
 
     model = keras.models.Model(input, outputs)
@@ -266,11 +275,15 @@ def train_model(model):
                                                                validation_split = 1-TRAIN_SIZE,
                                                                subset='both',
                                                                seed = 2)
+
+    callback = keras.callbacks.EarlyStopping(monitor='loss', patience=10)
     return model.fit(train,
               shuffle=True,
-              epochs=10,
+              batch_size= 32,
+              epochs=100,
               verbose=2,  ## Print info
-              validation_data=validate)
+              validation_data=validate,
+                  callbacks=[callback])
 
 def plot_history(history):
     """Plots two graphs, one for accuracy, and one for loss. Both depicting training and validation information."""
@@ -329,9 +342,7 @@ def show_images(img_list):
 
 if __name__ == '__main__':
     # balance_data(use_original_only = True, csv_name = 'data.csv')
-    # model = get_CNN_model()
-    model = vgg_model()
-
+    model = get_CNN_model()
     history = train_model(model)
     plot_history(history)
 
