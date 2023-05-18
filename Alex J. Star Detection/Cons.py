@@ -1,4 +1,7 @@
-PATH = 'C:\\Users\\tomto\\Desktop\\FINAL\\'
+PATH_TOM = 'C:\\Users\\tomto\\Desktop\\FINAL\\'
+PATH_SON = 'D:\\UNI\\FinalProject\\'
+PATH = PATH_SON
+# CSV_PATH =
 DATA_PATH = PATH + 'data\\star_side\\'
 TEST_PATH = PATH + 'data\\test\\'
 MODELS_PATH = PATH + 'models\\'
@@ -38,7 +41,6 @@ from keras.applications.vgg19 import preprocess_input
 from keras.models import Sequential
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split
-
 
 import tensorflow as tf
 

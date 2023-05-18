@@ -1,10 +1,11 @@
 ## Generates many models and saved the best.
+import os
 
 from Data import *
 from Model import *
 from Cons import *
 
-DATA = pd.read_csv(PATH + '\\data.csv', sep=SEP)
+DATA = pd.read_csv(os.getcwd() + '\\data.csv', sep=SEP)
 for id, label in zip(DATA['id'], DATA['rays']):
     DATA_FILENAME.append(id)
     DATA_LABEL.append(label)
@@ -98,8 +99,7 @@ def show_images(img_list, test = False):
         plt.show()
 
 
-if __name__ == '__main__':
-
+def model_generator():
     conv_nums = [1, 2] #, 3, 4, 5, 7, 8]
     fil_nums = [2, 4, 8, 16, 32, 64]
     fil_sizes = [3, 5, 7]
@@ -132,7 +132,14 @@ if __name__ == '__main__':
         del model
         # show_images(failures, test = True)
 
-    print(f'{counter} models saved.')
-    # for i in range(runs):
-    #     model = keras.models.load_model(MODELS_PATH + str(i))
-    #     model.summary()
+    return counter, runs
+
+# def get_model_summary(range):
+#     for i in range(runs):
+#         model = keras.models.load_model(MODELS_PATH + str(i))
+#         model.summary1()
+
+# if __name__ == '__main__':
+    # counter, runs = model_generator()
+    # print(f'{counter} models saved in {runs} runs.')
+
