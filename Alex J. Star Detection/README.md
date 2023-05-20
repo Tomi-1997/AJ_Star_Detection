@@ -7,6 +7,7 @@
 ✅ Write function to take X random samples from train dir and transfer to test dir. Data.py<br>
 ✅ Write function to take all samples in test dir back to train dir Data.py <br>
 💬 GUI window to drag file into and get prediction based on Predictor.py <br>
+🔳 Train models overnight, saved based on success rate on test <br>
 - [x] drag and drop option
 - [ ] open dialog option
 - [ ] prettier design 😩
