@@ -1,3 +1,5 @@
+import random
+
 from Cons import *
 
 
@@ -133,6 +135,38 @@ def draw_edges(img):
     cv2.drawContours(image_copy, contours, -1, (0, 255, 0), 1)
 
 
+def move_train_to_dir(num : int, classes : list):
+    """Transfer X images from train directory to test directory, for each given class"""
+    for label in classes:
+
+        pop = os.listdir(DATA_PATH + str(label))
+
+        num = min(len(pop), num)
+        target = random.sample(pop, num)
+
+        for filename in target:
+            old_file = DATA_PATH + str(label) + "\\" + filename
+            destination = TEST_PATH + str(label) + "\\" + filename
+
+            os.rename(old_file, destination)
+
+
+def move_all_back(classes : list):
+    """Transfers all images from test directory to train directory for each given class."""
+    for label in classes:
+
+        target = os.listdir(TEST_PATH + str(label))
+        old_path = TEST_PATH + str(label) + "\\"
+        new_path = DATA_PATH + str(label) + "\\"
+
+        for filename in target:
+
+            if not filename.endswith('.jpg'): continue
+
+            old_file =  old_path + filename
+            destination = new_path + filename
+
+            os.rename(old_file, destination)
 # if __name__ == '__main__':
 #     DATA = pd.read_csv(os.getcwd() + '\\data.csv', sep=SEP)
 #     for did, label in zip(DATA['id'], DATA['rays']):

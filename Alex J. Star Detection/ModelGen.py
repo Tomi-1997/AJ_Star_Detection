@@ -1,6 +1,4 @@
 ## Generates many models and saved the best.
-import os
-
 from Data import *
 from Model import *
 from Cons import *
@@ -109,7 +107,7 @@ def model_generator():
     best_model = None
 
 
-    runs = 1000
+    runs = 5
     counter = 0 ## Count how many models predicted all test photos successfully.
 
     print(f'Starting search for 0-test-mistakes models.')
@@ -123,7 +121,7 @@ def model_generator():
         print(f'conv_num = {conv_num}, fil_num = {fil_num}, fil_size = {fil_size}, opt = {opt}')
         model = get_CNN_model(conv_num = conv_num, fil_num = fil_num, fil_size = fil_size, opt = opt)
         history = train_model(model, w = weights)
-        failures = confusion_matrix_clf(model, test = True, show = False, log = True)
+        failures = confusion_matrix_clf(model, test = False, show = True, log = True)
 
         # if len(failures) == 0:
         #     model.save(MODELS_PATH + str(counter))
@@ -139,7 +137,15 @@ def model_generator():
 #         model = keras.models.load_model(MODELS_PATH + str(i))
 #         model.summary1()
 
-# if __name__ == '__main__':
-    # counter, runs = model_generator()
-    # print(f'{counter} models saved in {runs} runs.')
+if __name__ == '__main__':
+
+    ## Move random files from train to test
+    move_train_to_dir(2, [0, 6, 8])
+
+    ## Move them all back
+    move_all_back([0, 6, 8])
+
+    exit(0)
+    counter, runs = model_generator()
+    print(f'{counter} models saved in {runs} runs.')
 
