@@ -1,4 +1,6 @@
 ## Generates many models and saved the best.
+import os
+
 from Data import *
 from Model import *
 from Cons import *
@@ -52,7 +54,8 @@ def confusion_matrix_clf(model, test = False, show = True, log = False):
         Test - True
         Makes prediction on all images from test folders."""
 
-    x, y = get_data(test)
+    TEST = []
+    x, y = get_data(test, TEST)
     src = TEST if test else DATA_FILENAME
 
     if len(x) != len(y) or len(x) == 0: return
@@ -69,7 +72,7 @@ def confusion_matrix_clf(model, test = False, show = True, log = False):
 
     wrong_fnames = []
     for i in range(len(predictions)):
-        if predictions[i] != real[i] and real[i] != 0:
+        if predictions[i] != real[i]:
             wrong_fnames.append(src[i])
 
 
@@ -100,34 +103,41 @@ def show_images(img_list, test = False):
 def model_generator():
     conv_nums = [1, 2] #, 3, 4, 5, 7, 8]
     fil_nums = [2, 4, 8, 16, 32, 64]
-    fil_sizes = [3, 5, 7]
+    fil_sizes = [3, 5]
     opts = ['rmsprop', 'ftrl', 'adam', 'sgd']
-
-    min_mistakes = math.inf
-    best_model = None
+    activs = ['relu', 'elu', 'selu', 'gelu']
 
 
-    runs = 5
-    counter = 0 ## Count how many models predicted all test photos successfully.
+    runs = 10000
+    counter = len(os.listdir(MODELS_PATH)) ## Count how many models predicted all test photos successfully.
 
     print(f'Starting search for 0-test-mistakes models.')
     for _ in range(runs):
+        ## Move random files from train to test
+        move_train_to_dir(2, [0, 6, 8])
 
         conv_num = random.sample(conv_nums, 1)[0]
         fil_num = random.sample(fil_nums, 1)[0]
         fil_size = random.sample(fil_sizes, 1)[0]
         opt = random.sample(opts, 1)[0]
+        activ = random.sample(activs, 1)[0]
 
-        print(f'conv_num = {conv_num}, fil_num = {fil_num}, fil_size = {fil_size}, opt = {opt}')
-        model = get_CNN_model(conv_num = conv_num, fil_num = fil_num, fil_size = fil_size, opt = opt)
+        print(f'conv_num = {conv_num}, fil_num = {fil_num},'
+              f' fil_size = {fil_size}, opt = {opt}, activ = {activ}')
+
+        model = get_CNN_model(conv_num = conv_num, fil_num = fil_num,
+                              fil_size = fil_size, opt = opt, activ = activ)
+
         history = train_model(model, w = weights)
-        failures = confusion_matrix_clf(model, test = False, show = True, log = True)
+        failures = confusion_matrix_clf(model, test = True, show = False, log = True)
 
-        # if len(failures) == 0:
-        #     model.save(MODELS_PATH + str(counter))
-        #     counter += 1
+        if len(failures) == 0:
+            model.save(MODELS_PATH + str(counter))
+            counter += 1
 
         del model
+        ## Move them all back
+        move_all_back([0, 6, 8])
         # show_images(failures, test = True)
 
     return counter, runs
@@ -138,14 +148,7 @@ def model_generator():
 #         model.summary1()
 
 if __name__ == '__main__':
-
-    ## Move random files from train to test
-    move_train_to_dir(2, [0, 6, 8])
-
-    ## Move them all back
-    move_all_back([0, 6, 8])
-
-    exit(0)
+    move_all_back(LABELS)
     counter, runs = model_generator()
     print(f'{counter} models saved in {runs} runs.')
 

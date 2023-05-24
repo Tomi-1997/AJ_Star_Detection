@@ -1,3 +1,4 @@
+import os
 import random
 
 from Cons import *
@@ -61,7 +62,14 @@ def process_path(file_name, test=False):
     return image_to_tensor(file_name, test), label
 
 
-def get_data(test=False):
+def to_tensor(filepath, label):
+    one_hot = [True if l == label else False for l in LABELS]
+    img = tf.io.read_file(filepath)
+    img = decode_img(img)
+    return img, one_hot
+
+
+def get_data(test = False, TEST = None):
     """test - False
     Returns a tuple of all data values (tensor) and labels from data folder
     test - True
@@ -69,28 +77,30 @@ def get_data(test=False):
     x = []
     y = []
 
-    if len(TEST) == 0:  # Test list is not initialized
-        f0 = os.listdir(DATA_PATH + "\\0")
-        f6 = os.listdir(DATA_PATH + "\\6")
-        f8 = os.listdir(DATA_PATH + "\\8")
-        train_files = f0 + f6 + f8
-        for fname in DATA_FILENAME:
-            if fname + '.jpg' not in train_files:
-                TEST.append(fname)
+    path = TEST_PATH if test else DATA_PATH
+    #
+    # if len(TEST) == 0:  # Test list is not initialized
+    #     f0 = os.listdir(DATA_PATH + "\\0")
+    #     f6 = os.listdir(DATA_PATH + "\\6")
+    #     f8 = os.listdir(DATA_PATH + "\\8")
+    #     train_files = f0 + f6 + f8
+    #     for fname in DATA_FILENAME:
+    #         if fname + '.jpg' not in train_files:
+    #             TEST.append(fname)
 
-    src = TEST if test else DATA_FILENAME
-    for fname in src:
+    src = TEST_PATH if test else DATA_FILENAME
+    for label in os.listdir(src):
+        for filename in os.listdir(src + "\\" + label):
+            if filename.endswith(".ini"): continue
 
-        if fname in TEST and not test: continue  # Don't test images from the test folder / list
-        temp = process_path(file_name=fname, test=test)
-        tens = temp[0]
-        lab = temp[1]
+            temp = to_tensor(src + "\\" + label + "\\" + filename, int(label))
+            tens = temp[0]
+            lab = temp[1]
 
-        lab_ind = lab.index(True)
-        lab_str = LABELS[lab_ind]
+            x.append(tens)
+            y.append(lab)
 
-        x.append(tens)
-        y.append(lab)
+            if TEST is not None: TEST.append(filename)
 
     return x, y
 
@@ -140,7 +150,7 @@ def move_train_to_dir(num : int, classes : list):
     for label in classes:
 
         pop = os.listdir(DATA_PATH + str(label))
-
+        pop = list(filter(lambda x: x.endswith(".jpg"), pop))
         num = min(len(pop), num)
         target = random.sample(pop, num)
 

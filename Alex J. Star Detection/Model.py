@@ -78,7 +78,7 @@ def get_FN_model():
     return fc
 
 
-def get_CNN_model(conv_num, fil_num, fil_size, opt):
+def get_CNN_model(conv_num, fil_num, fil_size, opt, activ):
     """Returns a CNN model using tf2 and keras."""
     z = random.random() * 0.1
     z = round(z, 4)
@@ -92,12 +92,11 @@ def get_CNN_model(conv_num, fil_num, fil_size, opt):
     cnn = tf.keras.Sequential()
     cnn.add(layers.RandomRotation(z))
     cnn.add(layers.RandomZoom(z))
-    cnn.add(layers.GaussianNoise(1))
+    cnn.add(layers.GaussianNoise(1)) ## maybe lower std to 0.1
     # cnn.add(keras.layers.Lambda(find_edges))
 
     for _ in range(conv_num):
-        cnn.add(Conv2D(fil_num, fil_size, kernel_regularizer = reg))
-        cnn.add(layers.LeakyReLU())
+        cnn.add(Conv2D(fil_num, fil_size, kernel_regularizer = reg, activation = activ))
         cnn.add(MaxPooling2D())
 
     cnn.add(Flatten())
