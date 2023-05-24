@@ -52,13 +52,18 @@ class CoinApp:
         help_win.title("Help")
 
         # sets the geometry of toplevel
-        help_win.geometry("300x300")
+        help_win.geometry("400x300")
 
         # A Label widget to show in toplevel
         Label(help_win,
               text="Here's a guide how to use the program").pack()
-        text = Label(help_win)
-        text.config(text="DISABLED")
+        text = Text(help_win, wrap=WORD)
+        text.insert(INSERT, "1. Choose a picture for inspection by- \n")
+        text.insert(INSERT, "\t • Dragging it onto the window \n \t • By file > open\n")
+        text.insert(INSERT, "2. Edit the picture by cropping the star side if needed\n")
+        text.insert(INSERT, "3. Press the classify button \n")
+        text.insert(INSERT, "4. A label will appear with the approximate probability\n")
+        text.config(state=DISABLED)
         text.pack()
 
     def main_frame_config(self):

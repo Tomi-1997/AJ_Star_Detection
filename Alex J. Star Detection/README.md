@@ -10,9 +10,9 @@
 💬 Train models overnight, saved based on success rate on test <br>
 💬 GUI window to drag file into and get prediction based on Predictor.py <br>
 - [x] drag and drop option
-- [ ] menu
+- ✅ menu
   - [x] open dialog option
-  - [ ] help/guide button
+  - [x] help/guide button
 - [ ] predictor (automatic/by button)
 - [ ] multiple files?
   - [ ] clear files
