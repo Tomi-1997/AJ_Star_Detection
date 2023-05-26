@@ -42,7 +42,7 @@ def get_all_predictions(loaded_models, filename):
 def pred_conf(filepath : str, loaded_models : list):
     try:
         print(f'Predicting', end="")  ## end="" dosen't add a new line
-        preds = get_all_predictions(loaded_models, filename)
+        preds = get_all_predictions(loaded_models, filepath)
 
         max_label = max(preds, key=preds.get)  ## Get key K with most predictions
         max_val = preds[max_label]  ## with K get value to calculate confidence
