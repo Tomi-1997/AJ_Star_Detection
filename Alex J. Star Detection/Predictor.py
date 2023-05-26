@@ -1,4 +1,7 @@
+import tensorflow.python.framework.errors_impl
 from ModelGen import *
+
+
 
 def predict_label(model, filename):
 
@@ -12,25 +15,60 @@ def predict_label(model, filename):
 
     return LABELS[ans]
 
+
+def load_models(md_list):
+    ans = []
+    for md in md_list:
+        if 'ignore' in md: continue
+        ans.append(keras.models.load_model(MODELS_PATH + str(md)))
+    return ans
+
+
+
+def get_all_predictions(loaded_models, filename):
+    """Input - list of models, filename
+       Returns - Dictionary, key - label, value - how many models predicted that key"""
+    predictions = { label : 0 for label in LABELS }     ## Count occurence of each prediction
+    for i, md in enumerate(loaded_models):
+
+        guess = predict_label(md, filename)
+        predictions[guess] += 1
+        print(f'.', end="")                             ## Show progress, can be commented out
+
+    print("")
+    return predictions
+
+
+def pred_conf(filepath : str, loaded_models : list):
+    try:
+        print(f'Predicting', end="")  ## end="" dosen't add a new line
+        preds = get_all_predictions(loaded_models, filename)
+
+        max_label = max(preds, key=preds.get)  ## Get key K with most predictions
+        max_val = preds[max_label]  ## with K get value to calculate confidence
+        conf = max_val / len(loaded_models)
+
+        return max_label, conf
+
+    except tensorflow.errors.NotFoundError:
+        print(f'\nFile not found.')
+        return -1, -1
+
+
+
 if __name__ == '__main__':
+    tf.get_logger().setLevel('ERROR')                   ## Disable warning of using predict in for loop
 
-
+    print("Loading all models.")
+    models = os.listdir(MODELS_PATH)
+    loaded_models = load_models(models)
 
     while True:
 
-        print(f'Hi, please enter a file name if it is in the same directory, or the path.')
+        print(f'Enter a file name if it is in the same directory, or the path.')
         filename = input()
-        print(f'Predicting', end = "")                      ## end="" dosen't add a new line
-        models = os.listdir(MODELS_PATH)
+        filename = filename if '.' in filename else filename + '.jpg'
 
-        tf.get_logger().setLevel('ERROR')                   ## Disable warning of using predict in for loop
-        predictions = { label : 0 for label in LABELS }     ## Count occurence of each prediction
+        guess, conf = pred_conf(filename, loaded_models)
+        print(f'Label - {guess}, Confidence = {conf * 100:.2f}%')
 
-        for i in models:
-            model = keras.models.load_model(MODELS_PATH + str(i))
-            guess = predict_label(model, filename)
-
-            predictions[guess] += 1
-            print(f'.', end="")
-
-        print(predictions)
