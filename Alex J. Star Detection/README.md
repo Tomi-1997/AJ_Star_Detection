@@ -13,7 +13,7 @@
 - ✅ menu
   - [x] open dialog option
   - [x] help/guide button
-- [ ] predictor (automatic/by button)
+- [x] predictor (automatic/by button)
 - [ ] multiple files?
   - [ ] clear files
   - [ ] load already brought on files
