@@ -1,7 +1,8 @@
+import os
 from tkinter import *
 from tkinter import filedialog
-
-# from Predictor import multi_predict
+from Cons import MODELS_PATH
+from Predictor import load_models, pred_conf
 import tkinterDnD as tkD
 import tkinterdnd2
 from PIL import ImageTk, Image
@@ -9,6 +10,7 @@ from PIL import ImageTk, Image
 
 class CoinApp:
     def __init__(self):
+        self.loaded_models = []
         self.root = tkD.Tk()
         self.config_root()
         # main frame
@@ -16,8 +18,8 @@ class CoinApp:
         self.labelframe = LabelFrame(self.root, bg='gold')
         self.entrybox = Entry(self.root, textvar=self.testvariable, width=80)
         self.textlabel = Label(self.root, text='drop the file below')
-        self.predition_label = Label(self.root, text='Label: ')
-        self.predict_btn = Button(self.root, text="predict", command=self.predict)
+        self.predition_label = Label(self.root, text='Click to classify')
+        self.predict_btn = Button(self.root, text="Classify", command=self.predict)
         self.main_frame_config()
         # menubar
         self.init_menu()
@@ -74,9 +76,15 @@ class CoinApp:
         self.predition_label.pack()
 
     def predict(self):
+        if len(self.loaded_models) == 0:
+            models = os.listdir(MODELS_PATH)
+            self.loaded_models = load_models(models)
+            self.predition_label.config(text="Loading Models...")
+
         image_path = str(self.root.file_name)
-        res = "ass"
-        self.predition_label.config(text="Label: " + res)
+        guess, conf = pred_conf(image_path, self.loaded_models)
+        res = f'Label - {guess}, Confidence = {conf * 100:.2f}%'
+        self.predition_label.config(text=res)
 
     def drop_image(self, event):
         self.testvariable.set(event.data)
