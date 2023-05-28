@@ -1,3 +1,5 @@
+import time
+
 import tensorflow.python.framework.errors_impl
 from ModelGen import *
 
@@ -16,11 +18,12 @@ def predict_label(model, filename):
     return LABELS[ans]
 
 
-def load_models(md_list):
+def load_models(md_list, path):
     ans = []
     for md in md_list:
-        if 'ignore' in md: continue
-        ans.append(keras.models.load_model(MODELS_PATH + str(md)))
+        if not md[0].isdigit(): continue
+        # ans.append(keras.models.load_model(MODELS_PATH + str(md)))
+        ans.append(keras.models.load_model(path + str(md)))
     return ans
 
 
@@ -54,15 +57,34 @@ def pred_conf(filepath : str, loaded_models : list):
         print(f'\nFile not found.')
         return -1, -1
 
+def save_as_H5(md_list):
+    for md in md_list:
+        if 'ignore' in md: continue
+        model = keras.models.load_model(MODELS_PATH + str(md))
+        model.save(MODELS_PATH +"\\H05\\"+ str(md)+".h5")
+
 
 
 if __name__ == '__main__':
     tf.get_logger().setLevel('ERROR')                   ## Disable warning of using predict in for loop
 
     print("Loading all models.")
-    models = os.listdir(MODELS_PATH)
-    loaded_models = load_models(models)
+    # models = os.listdir(MODELS_PATH)
+    # save_as_H5(models)
 
+    start = time.time()
+    models = os.listdir(MODELS_PATH+"\\H05\\")  ## This might take around 20 seconds
+    loaded_models = load_models(models, path=MODELS_PATH+"\\H05\\")
+    end = time.time()
+    print(end - start)
+
+    start = time.time()
+    models = os.listdir(MODELS_PATH)
+    loaded_models = load_models(models, path=MODELS_PATH)
+    end = time.time()
+    print(end - start)
+
+    exit(0)
     while True:
 
         print(f'Enter a file name if it is in the same directory, or the path.')
