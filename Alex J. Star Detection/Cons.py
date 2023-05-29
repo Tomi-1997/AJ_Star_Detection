@@ -8,7 +8,7 @@ MODELS_PATH = PATH + 'models\\'
 
 SEP = ';'
 
-IMG_H = 100
+IMG_H = 64
 IMG_W = IMG_H
 CHANNELS = 3
 
