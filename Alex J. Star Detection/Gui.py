@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
 from tkinter import ttk
+from Cons import tf
 
 import tkinterDnD as tkD
 import tkinterdnd2
@@ -10,102 +11,9 @@ from Cons import MODELS_PATH
 from PIL import ImageTk, Image
 from Predictor import pred_conf
 
+import threading
 
 # https://www.pythontutorial.net/tkinter/tkinter-object-oriented-frame/
-
-
-class InputFrame(ttk.Frame):
-    def __init__(self, master):
-        super().__init__(master)
-        # self.config(bg='gold')
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(1, weight=2)
-        self.master = master
-        self.__create_widgets()
-
-    def __create_widgets(self):
-        self.testvariable = StringVar()
-        self.labelframe = LabelFrame(self, bg='white', height=200)
-        self.entrybox = Entry(self, bg='gold', textvar=self.testvariable, width=80)
-        self.textlabel = Label(self, bg='gold', text='drop the file below')
-        self.textlabel.grid(column=0, row=0)
-        self.entrybox.grid(column=1, row=0, sticky=tk.W)
-        self.labelframe.grid(column=0, row=1, padx=20, pady=20, columnspan=2, sticky=tk.NSEW)
-        self.__dnd_config()
-
-    def __dnd_config(self):
-        self.entrybox.drop_target_register(tkinterdnd2.DND_FILES)
-        self.entrybox.dnd_bind('<<Drop>>', self.drop_image)
-        self.labelframe.drop_target_register(tkinterdnd2.DND_FILES)
-        self.labelframe.dnd_bind('<<Drop>>', self.drop_image)
-
-    def drop_image(self, event):
-        self.testvariable.set(event.data)
-        self.show_image()
-
-    def show_image(self, filepath=""):
-        if filepath:
-            self.master.file_name = filepath
-        else:
-            # get the value from string variable
-            self.master.file_name = self.testvariable.get()
-
-        image_path = Image.open(str(self.master.file_name))
-        # resize image
-        reside_image = image_path.resize((200, 200))
-        # displays an image
-        self.master.image = ImageTk.PhotoImage(reside_image)
-        image_label = Label(self.labelframe, image=self.master.image)
-        image_label.pack(anchor='center')
-
-
-class PredictFrame(ttk.Frame):
-    def __init__(self, master):
-        super().__init__(master)
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(1, weight=2)
-        self.master = master
-        self.loaded_models = []
-        self.__create_widgets()
-        self.__init_models()
-
-    def __create_widgets(self):
-        self.predict_variable = StringVar()
-        self.predition_label = Label(self, text=self.predict_variable, bg='gold')
-        self.predict_btn = Button(self, text="Classify", command=self.predict)
-        self.predict_btn.config(state=DISABLED)
-        self.predict_btn.grid(column=0, row=0, sticky=tk.W)
-        self.predition_label.grid(column=1, row=0, sticky=tk.W)
-
-        self.md_progress = ttk.Progressbar(
-            self,
-            orient='horizontal',
-            mode='determinate',
-            length=210
-        )
-        self.md_progress.grid()
-
-    def __init_models(self):
-        import keras
-        self.predict_variable.set("Loading Models...")
-        path = MODELS_PATH+"\\H05\\"
-        md_list =  os.listdir(path)
-        for md in md_list:
-            self.loaded_models.append(keras.models.load_model(path + str(md)))
-            progress = len(self.loaded_models) / len(md_list)
-            self.md_progress['value'] = progress * 210
-
-        if (self.master.image):
-            self.predict_btn.config(state=NORMAL)
-
-    def predict(self):
-        image_path = str(self.master.file_name)
-        guess, conf = pred_conf(image_path, self.loaded_models)
-        res = f'Label - {guess}, Confidence = {conf * 100:.2f}%'
-        self.predict_variable.set(res)
-
 
 class CoinApp(tkD.Tk):
     def __init__(self):
@@ -115,40 +23,141 @@ class CoinApp(tkD.Tk):
         self.geometry('700x600')
         self.config(bg='gold')
 
-        self.rowconfigure(0, weight=4)
-        self.rowconfigure(1, weight=1)
-        # main frame
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=5)
+        self.rowconfigure(2, weight=1)
 
-        # self.main_frame_config()
+        self.__init_widgets()
 
-        # menubar
-        self.init_menu()
-        self.__create_widgets()
+    def __init_widgets(self):
+        self.loaded_models = []
+        self.__init_menu()
+        self.__init_input_frame()
+        self.__init_classifier_frame()
 
-    def __create_widgets(self):
-        self.init_menu()
-        self.inputframe = InputFrame(self)
-        self.inputframe.grid(column=0, row=0, columnspan=2, sticky=tk.NSEW)
-        self.classifier = PredictFrame(self)
-        self.classifier.grid(column=0, row=1, columnspan=2, sticky=tk.NSEW)
+    def __init_input_frame(self):
+        input_frame = tk.Frame(self, bg='gold')
+        input_frame.grid(column=0, row=0, sticky=NE)
+        self.entry_var = StringVar()
 
-    def init_menu(self):
+        title_label = Label(input_frame, bg='gold', text='drop the file below')
+        filename = Entry(input_frame, bg='gold', textvar=self.entry_var, width=80, state=DISABLED)
+        self.picture_frame = Frame(input_frame, bg='white', height=200)
+
+        self.picture_frame.pack(anchor=S, side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        title_label.pack(anchor=N, side=tk.LEFT, padx=10)
+        filename.pack(anchor=N, side=tk.LEFT, padx=10)
+
+        filename.drop_target_register(tkinterdnd2.DND_FILES)
+        filename.dnd_bind('<<Drop>>', self.drop_image)
+        self.picture_frame.drop_target_register(tkinterdnd2.DND_FILES)
+        self.picture_frame.dnd_bind('<<Drop>>', self.drop_image)
+
+        self.entry_var.trace('w', self.__reset_prediction)
+
+    def drop_image(self, event):
+        self.clear_image()
+        self.entry_var.set(event.data)
+        self.show_image()
+
+    def clear_image(self):
+        for pic in self.picture_frame.winfo_children():
+            pic.destroy()
+
+    def show_image(self):
+        file_name = self.entry_var.get()
+
+        image_path = Image.open(str(file_name))
+        # resize image
+        reside_image = image_path.resize((200, 200))
+        # displays an image
+        image = ImageTk.PhotoImage(reside_image)
+        image_label = Label(self.picture_frame, image=image, bg='white')
+        image_label.image = image
+        image_label.pack(anchor='center')
+
+    def __init_classifier_frame(self):
+        classifier_frame = tk.Frame(self, bg='red')
+        classifier_frame.grid(column=0, row=1, sticky=S)
+
+        self.button_var = StringVar(value="Load Models")
+        self.classifier_button = Button(classifier_frame, textvar=self.button_var, command=self.__init_models)
+
+        self.label_var = StringVar(value="<- please click here to start")
+        classifier_label = Label(classifier_frame, textvar=self.label_var, bg='gold')
+
+        self.classifier_button.pack(anchor=N, side=tk.LEFT, padx=10)
+        classifier_label.pack(anchor=N, side=tk.LEFT, padx=10)
+
+        self.md_progress = ttk.Progressbar(
+            classifier_frame,
+            orient='horizontal',
+            mode='determinate',
+            length=240
+        )
+        self.md_progress.pack()
+
+    def __init_models(self):
+        self.label_var.set("Loading Models...")
+        self.button_var.set("Loading...")
+
+        # Start a new thread to load the models
+        load_thread = threading.Thread(target=self.load_models_thread)
+        load_thread.start()
+
+    def load_models_thread(self):
+        import keras
+        path = MODELS_PATH
+        md_list = os.listdir(path)
+        total = len(md_list)
+        loaded_models = []
+        for md in md_list:
+            loaded_models.append(keras.models.load_model(path + str(md)))
+            self.md_progress['value'] += (1/total)*100
+        # Update the loaded models in the main GUI thread
+        self.update_loaded_models(loaded_models)
+
+    def update_loaded_models(self, loaded_models):
+        self.loaded_models = loaded_models
+        # Update the GUI elements to reflect the loaded state
+
+        self.button_var.set("Classify")
+        self.classifier_button.config(state=NORMAL, command=self.__predict)
+        self.label_var.set("<- press to classify")
+
+        # self.md_progress.grid_forget()
+
+    def __predict(self):
+        image_path = self.entry_var.get()
+        guess, conf = pred_conf(image_path, self.loaded_models)
+        res = f'Label - {guess}, Confidence = {conf * 100:.2f}%'
+        self.label_var.set(res)
+
+    def __reset_prediction(self, *args):
+        self.label_var.set("<- press to classify")
+        if self.entry_var.get() != "" and self.classifier_button['state'] == tk.DISABLED:
+            self.classifier_button.config(state=NORMAL)
+
+    def __init_menu(self):
         menubar = Menu(self)
         self.config(menu=menubar)
 
         file_menu = Menu(menubar, tearoff=0)
         menubar.add_cascade(label='File', menu=file_menu)
-        file_menu.add_command(label='Open', command=self.open_file)
+        file_menu.add_command(label='Open', command=self.__open_file)
         file_menu.add_separator()
         file_menu.add_command(label='Exit', command=self.quit)
         menubar.add_cascade(label='Help', command=self.help_window)
 
-    def open_file(self):
+    def __open_file(self):
         file_path = filedialog.askopenfilename(title='Select Image File',
                                                filetypes=[('Image Files', '*.png *.jpg *.jpeg')])
         if file_path:
-            # self.testvariable.set(file_path)
-            self.inputframe.show_image(file_path)
+            self.clear_image()
+            self.entry_var.set(file_path)
+            self.show_image()
 
     def help_window(self):
         help_win = Toplevel(self.root)
@@ -166,10 +175,8 @@ class CoinApp(tkD.Tk):
         text.config(state=DISABLED)
         text.pack()
 
-    def run(self):
-        self.mainloop()
-
 
 if __name__ == '__main__':
+    tf.get_logger().setLevel('ERROR')
     app = CoinApp()
-    app.run()
+    app.mainloop()
