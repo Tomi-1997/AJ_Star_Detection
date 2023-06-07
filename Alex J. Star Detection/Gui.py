@@ -1,33 +1,39 @@
 import os
 import tkinter as tk
 from tkinter import *
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from tkinter import ttk
 from Cons import tf
 
-import tkinterDnD as tkD
-import tkinterdnd2
+import tkinter.dnd
+import customtkinter as ctk
+# import tkinterDnD
+from tkinterdnd2 import TkinterDnD, DND_FILES
 from Cons import MODELS_PATH
 from PIL import ImageTk, Image
 from Predictor import pred_conf
 
 import threading
 
-# https://www.pythontutorial.net/tkinter/tkinter-object-oriented-frame/
 
-class CoinApp(tkD.Tk):
+class Tk(ctk.CTk, TkinterDnD.DnDWrapper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.TkdndVersion = TkinterDnD._require(self)
+
+
+ctk.set_default_color_theme("green")
+
+
+class CoinApp(Tk):
     def __init__(self):
         super().__init__()
-
         self.title('Alexander Jannaeus Coin Classifier')
         self.geometry('700x600')
-        self.config(bg='gold')
+        # self.config(bg='gold')
 
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=5)
-        self.rowconfigure(2, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure((0, 1), weight=1)
 
         self.__init_widgets()
 
@@ -36,23 +42,27 @@ class CoinApp(tkD.Tk):
         self.__init_menu()
         self.__init_input_frame()
         self.__init_classifier_frame()
+        self.__init_models()
 
     def __init_input_frame(self):
-        input_frame = tk.Frame(self, bg='gold')
-        input_frame.grid(column=0, row=0, sticky=NE)
+        input_frame = ctk.CTkFrame(master=self)
+        input_frame.grid(column=0, row=0, columnspan=2, padx=20, pady=(20, 0), sticky="nsew")
+        input_frame.grid_rowconfigure(0, weight=1)
+        input_frame.grid_rowconfigure(1, weight=3)
+        input_frame.grid_columnconfigure((0, 1), weight=1)
         self.entry_var = StringVar()
 
-        title_label = Label(input_frame, bg='gold', text='drop the file below')
-        filename = Entry(input_frame, bg='gold', textvar=self.entry_var, width=80, state=DISABLED)
-        self.picture_frame = Frame(input_frame, bg='white', height=200)
+        title_label = ctk.CTkLabel(input_frame, text='drop the file below')
+        filename = ctk.CTkEntry(input_frame, textvariable=self.entry_var, width=80, state=DISABLED)
+        self.picture_frame = ctk.CTkFrame(input_frame, height=200)
 
-        self.picture_frame.pack(anchor=S, side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        title_label.pack(anchor=N, side=tk.LEFT, padx=10)
-        filename.pack(anchor=N, side=tk.LEFT, padx=10)
+        self.picture_frame.grid(row=1, column=0, columnspan=2, padx=20, pady=(0, 20), sticky="nsew")
+        title_label.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+        filename.grid(row=1, column=1, padx=20, pady=20, sticky="ew")
 
-        filename.drop_target_register(tkinterdnd2.DND_FILES)
+        filename.drop_target_register(DND_FILES)
         filename.dnd_bind('<<Drop>>', self.drop_image)
-        self.picture_frame.drop_target_register(tkinterdnd2.DND_FILES)
+        self.picture_frame.drop_target_register(DND_FILES)
         self.picture_frame.dnd_bind('<<Drop>>', self.drop_image)
 
         self.entry_var.trace('w', self.__reset_prediction)
@@ -71,31 +81,30 @@ class CoinApp(tkD.Tk):
 
         image_path = Image.open(str(file_name))
         # resize image
-        reside_image = image_path.resize((200, 200))
+        # reside_image = image_path.resize((200, 200))
         # displays an image
-        image = ImageTk.PhotoImage(reside_image)
-        image_label = Label(self.picture_frame, image=image, bg='white')
+        image = ctk.CTkImage(light_image=image_path, size=(200, 200))
+        image_label = ctk.CTkLabel(self.picture_frame, image=image, text="")
         image_label.image = image
         image_label.pack(anchor='center')
 
     def __init_classifier_frame(self):
-        classifier_frame = tk.Frame(self, bg='red')
-        classifier_frame.grid(column=0, row=1, sticky=S)
-
-        self.button_var = StringVar(value="Load Models")
-        self.classifier_button = Button(classifier_frame, textvar=self.button_var, command=self.__init_models)
+        classifier_frame = ctk.CTkFrame(self)
+        classifier_frame.grid(column=0, row=1, columnspan=2,  padx=20, pady=20, sticky="nsew")
+        self.button_var = StringVar()
+        self.classifier_button = ctk.CTkButton(classifier_frame, textvariable=self.button_var, command=self.__predict)
 
         self.label_var = StringVar(value="<- please click here to start")
-        classifier_label = Label(classifier_frame, textvar=self.label_var, bg='gold')
+        classifier_label = ctk.CTkLabel(classifier_frame, textvariable=self.label_var)
 
         self.classifier_button.pack(anchor=N, side=tk.LEFT, padx=10)
         classifier_label.pack(anchor=N, side=tk.LEFT, padx=10)
 
-        self.md_progress = ttk.Progressbar(
+        self.md_progress = ctk.CTkProgressBar(
             classifier_frame,
-            orient='horizontal',
+            orientation='horizontal',
             mode='determinate',
-            length=240
+            width=240
         )
         self.md_progress.pack()
 
@@ -115,7 +124,7 @@ class CoinApp(tkD.Tk):
         loaded_models = []
         for md in md_list:
             loaded_models.append(keras.models.load_model(path + str(md)))
-            self.md_progress['value'] += (1/total)*100
+            self.md_progress.step()
         # Update the loaded models in the main GUI thread
         self.update_loaded_models(loaded_models)
 
@@ -124,12 +133,19 @@ class CoinApp(tkD.Tk):
         # Update the GUI elements to reflect the loaded state
 
         self.button_var.set("Classify")
-        self.classifier_button.config(state=NORMAL, command=self.__predict)
+        self.classifier_button.configure(state=NORMAL, command=self.__predict)
         self.label_var.set("<- press to classify")
 
         # self.md_progress.grid_forget()
 
     def __predict(self):
+        if len(self.loaded_models) < 24:
+            messagebox.showerror('Error', 'The models need to finish to load')
+            return
+        if not self.entry_var.get():
+            messagebox.showerror('Error', 'No picture has been uploaded')
+            return
+
         image_path = self.entry_var.get()
         guess, conf = pred_conf(image_path, self.loaded_models)
         res = f'Label - {guess}, Confidence = {conf * 100:.2f}%'

@@ -22,5 +22,8 @@
 
 💬 Gui additional stuff
 - [ ] resize/crop option https://www.tutorialspoint.com/opencv-python-how-to-draw-a-rectangle-using-mouse-events
-- [ ] prettier design 😩
-<br>
+- [x] prettier design 😩
+- [x] error handling   <br>
+  - no pic in frame (to classify/crop)
+  - models not done loading
+
