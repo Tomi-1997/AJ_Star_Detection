@@ -48,17 +48,18 @@ class CoinApp(Tk):
         input_frame = ctk.CTkFrame(master=self)
         input_frame.grid(column=0, row=0, columnspan=2, padx=20, pady=(20, 0), sticky="nsew")
         input_frame.grid_rowconfigure(0, weight=1)
-        input_frame.grid_rowconfigure(1, weight=3)
-        input_frame.grid_columnconfigure((0, 1), weight=1)
+        input_frame.grid_rowconfigure(1, weight=5)
+        input_frame.grid_columnconfigure(0, weight=1)
+        input_frame.grid_columnconfigure(1, weight=3)
         self.entry_var = StringVar()
 
         title_label = ctk.CTkLabel(input_frame, text='drop the file below')
-        filename = ctk.CTkEntry(input_frame, textvariable=self.entry_var, width=80, state=DISABLED)
+        filename = ctk.CTkEntry(input_frame, textvariable=self.entry_var, width=80, state="disabled")
         self.picture_frame = ctk.CTkFrame(input_frame, height=200)
 
         self.picture_frame.grid(row=1, column=0, columnspan=2, padx=20, pady=(0, 20), sticky="nsew")
-        title_label.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
-        filename.grid(row=1, column=1, padx=20, pady=20, sticky="ew")
+        title_label.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+        filename.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
         filename.drop_target_register(DND_FILES)
         filename.dnd_bind('<<Drop>>', self.drop_image)
@@ -80,25 +81,24 @@ class CoinApp(Tk):
         file_name = self.entry_var.get()
 
         image_path = Image.open(str(file_name))
-        # resize image
-        # reside_image = image_path.resize((200, 200))
-        # displays an image
         image = ctk.CTkImage(light_image=image_path, size=(200, 200))
         image_label = ctk.CTkLabel(self.picture_frame, image=image, text="")
-        image_label.image = image
+        # image_label.image = image
         image_label.pack(anchor='center')
 
     def __init_classifier_frame(self):
         classifier_frame = ctk.CTkFrame(self)
-        classifier_frame.grid(column=0, row=1, columnspan=2,  padx=20, pady=20, sticky="nsew")
+        classifier_frame.grid(column=0, row=1, columnspan=2, padx=20, pady=20, sticky="nsew")
+        classifier_frame.grid_rowconfigure(0, weight=1)
+        classifier_frame.grid_columnconfigure((0, 1, 2), weight=1)
         self.button_var = StringVar()
         self.classifier_button = ctk.CTkButton(classifier_frame, textvariable=self.button_var, command=self.__predict)
 
         self.label_var = StringVar(value="<- please click here to start")
         classifier_label = ctk.CTkLabel(classifier_frame, textvariable=self.label_var)
 
-        self.classifier_button.pack(anchor=N, side=tk.LEFT, padx=10)
-        classifier_label.pack(anchor=N, side=tk.LEFT, padx=10)
+        self.classifier_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+        classifier_label.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
         self.md_progress = ctk.CTkProgressBar(
             classifier_frame,
@@ -106,7 +106,7 @@ class CoinApp(Tk):
             mode='determinate',
             width=240
         )
-        self.md_progress.pack()
+        self.md_progress.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
     def __init_models(self):
         self.label_var.set("Loading Models...")
@@ -120,7 +120,6 @@ class CoinApp(Tk):
         import keras
         path = MODELS_PATH
         md_list = os.listdir(path)
-        total = len(md_list)
         loaded_models = []
         for md in md_list:
             loaded_models.append(keras.models.load_model(path + str(md)))
@@ -136,6 +135,7 @@ class CoinApp(Tk):
         self.classifier_button.configure(state=NORMAL, command=self.__predict)
         self.label_var.set("<- press to classify")
 
+        self.md_progress.configure(mode="indeterminate")
         # self.md_progress.grid_forget()
 
     def __predict(self):
@@ -145,15 +145,20 @@ class CoinApp(Tk):
         if not self.entry_var.get():
             messagebox.showerror('Error', 'No picture has been uploaded')
             return
+        pred_thread = threading.Thread(target=self.get_pred)
+        pred_thread.start()
 
+    def get_pred(self):
+        self.md_progress.start()
         image_path = self.entry_var.get()
         guess, conf = pred_conf(image_path, self.loaded_models)
-        res = f'Label - {guess}, Confidence = {conf * 100:.2f}%'
+        res = f'{guess} rayed star, Confidence = {conf * 100:.2f}%'
         self.label_var.set(res)
+        self.md_progress.stop()
 
     def __reset_prediction(self, *args):
         self.label_var.set("<- press to classify")
-        if self.entry_var.get() != "" and self.classifier_button['state'] == tk.DISABLED:
+        if self.entry_var.get() != "" and self.classifier_button.cget("state") == "disabled":
             self.classifier_button.config(state=NORMAL)
 
     def __init_menu(self):
@@ -176,20 +181,36 @@ class CoinApp(Tk):
             self.show_image()
 
     def help_window(self):
-        help_win = Toplevel(self.root)
+        help_win = ctk.CTkToplevel(self)
 
         help_win.title("Help")
-        help_win.geometry("500x300")
-        Label(help_win,
-              text="Here's a guide how to use the program").pack()
-        text = Text(help_win, wrap=WORD)
-        text.insert(INSERT, "1. Choose a picture for inspection by one of the options- \n")
-        text.insert(INSERT, "\t • Dragging it onto the window \n \t • file > open\n")
-        text.insert(INSERT, "2. Edit the picture by cropping the star side if needed\n")
-        text.insert(INSERT, "3. Press the classify button \n")
-        text.insert(INSERT, "4. A label will appear with the approximate probability\n")
-        text.config(state=DISABLED)
-        text.pack()
+        help_win.geometry("400x350")
+        help_win.focus()
+        help_win.grid_rowconfigure(0, weight=1)
+        help_win.grid_rowconfigure(1, weight=4)
+        help_win.grid_rowconfigure(2, weight=2)
+        # help_win.grid_rowconfigure((0, 1, 2), weight=1)
+        help_win.grid_columnconfigure((0, 1), weight=1)
+
+        help_title = ctk.CTkLabel(help_win, text="Here's a guide how to use the program")
+        help_title.grid(column=0, row=0, columnspan=2, padx=10, pady=(5, 0), sticky="nsew")
+
+        text = ctk.CTkTextbox(help_win, wrap=WORD, height=50)
+        text.insert("0.0", "1. Choose a picture for inspection by one of the options- \n")
+        text.insert("end", "\t • Dragging it onto the window \n \t • file > open\n")
+        text.insert("end", "2. Edit the picture by cropping the star side like below if needed\n")
+        text.insert("end", "3. Press the classify button \n")
+        text.insert("end", "4. A label will appear with the approximate probability\n")
+        text.configure(state="disabled")
+        text.grid(row=1, column=0, padx=10, columnspan=2, pady=(5, 0), sticky="nsew")
+
+        file_name = "cropped_eg.jpg"
+        image_path = Image.open(file_name)
+        image = ctk.CTkImage(light_image=image_path, size=(100, 100))
+        image_label = ctk.CTkLabel(help_win, image=image, text="")
+        image_label.grid(row=2, column=1, padx=10, pady=(0, 10), sticky="ew")
+        eg_label = ctk.CTkLabel(help_win, text="cropped example")
+        eg_label.grid(row=2, column=0, padx=10, pady=(5, 0), sticky="e")
 
 
 if __name__ == '__main__':
