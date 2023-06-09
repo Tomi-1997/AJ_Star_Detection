@@ -8,22 +8,28 @@
 ✅ Write function to take X random samples from train dir and transfer to test dir. Data.py<br>
 ✅ Write function to take all samples in test dir back to train dir Data.py <br>
 ✅ Train models overnight, saved based on success rate on test (Maybe more?) <br>
-✅ GUI window to drag file into and get prediction based on Predictor.py <br>
-- [x] drag and drop option
-- [x] menu
-  - [x] open dialog option
-  - [x] help/guide button
-- [x] predictor (button)
-  - [x] label updating to prediction
-  - [x] if picture changed, reset label
-  - [x] model loader
-- [x] ~~multiple files~~ no need (keep it simple)
-- [x] override previous image<br>
+
+### GUI window 
+drag file into and get prediction based on Predictor.py <br>
+
+✅ drag and drop option 
+
+✅ menu
+- [x] open dialog option
+- [x] help/guide button <br>
+
+✅ predictor (button / ~~automatic~~) 
+- [x] label updating to prediction
+- [x] if picture changed, reset label
+- [x] model loader
+
+✅  prettier design 😩
 
 💬 Gui additional stuff
 - [ ] resize/crop option https://www.tutorialspoint.com/opencv-python-how-to-draw-a-rectangle-using-mouse-events
-- [x] prettier design 😩
-- [x] error handling   <br>
-  - no pic in frame (to classify/crop)
-  - models not done loading
+
+💬 bugs - 
+- [x] override previous image
+- [x] handle no pic in frame (to classify/crop)
+- [x] handle models not done loading
 
