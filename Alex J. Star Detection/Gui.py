@@ -1,13 +1,10 @@
 import os
-import tkinter as tk
-from tkinter import *
-from tkinter import filedialog, messagebox
-from tkinter import ttk
+from tkinter import filedialog, messagebox, StringVar, Menu
 from Cons import tf
 
-import tkinter.dnd
+
 import customtkinter as ctk
-# import tkinterDnD
+
 from tkinterdnd2 import TkinterDnD, DND_FILES
 from Cons import MODELS_PATH
 from PIL import ImageTk, Image
@@ -132,7 +129,7 @@ class CoinApp(Tk):
         # Update the GUI elements to reflect the loaded state
 
         self.button_var.set("Classify")
-        self.classifier_button.configure(state=NORMAL, command=self.__predict)
+        self.classifier_button.configure(state="normal", command=self.__predict)
         self.label_var.set("<- press to classify")
 
         self.md_progress.configure(mode="indeterminate")
@@ -159,7 +156,7 @@ class CoinApp(Tk):
     def __reset_prediction(self, *args):
         self.label_var.set("<- press to classify")
         if self.entry_var.get() != "" and self.classifier_button.cget("state") == "disabled":
-            self.classifier_button.config(state=NORMAL)
+            self.classifier_button.config(state="normal")
 
     def __init_menu(self):
         menubar = Menu(self)
@@ -195,7 +192,7 @@ class CoinApp(Tk):
         help_title = ctk.CTkLabel(help_win, text="Here's a guide how to use the program")
         help_title.grid(column=0, row=0, columnspan=2, padx=10, pady=(5, 0), sticky="nsew")
 
-        text = ctk.CTkTextbox(help_win, wrap=WORD, height=50)
+        text = ctk.CTkTextbox(help_win, wrap="word", height=50)
         text.insert("0.0", "1. Choose a picture for inspection by one of the options- \n")
         text.insert("end", "\t • Dragging it onto the window \n \t • file > open\n")
         text.insert("end", "2. Edit the picture by cropping the star side like below if needed\n")
@@ -204,7 +201,7 @@ class CoinApp(Tk):
         text.configure(state="disabled")
         text.grid(row=1, column=0, padx=10, columnspan=2, pady=(5, 0), sticky="nsew")
 
-        file_name = "cropped_eg.jpg"
+        file_name = "gui_accessories/cropped_eg.jpg"
         image_path = Image.open(file_name)
         image = ctk.CTkImage(light_image=image_path, size=(100, 100))
         image_label = ctk.CTkLabel(help_win, image=image, text="")

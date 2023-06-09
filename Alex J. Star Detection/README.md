@@ -26,9 +26,9 @@ drag file into and get prediction based on Predictor.py <br>
 ✅  prettier design 😩
 
 💬 Gui additional stuff
-- [ ] resize/crop option https://www.tutorialspoint.com/opencv-python-how-to-draw-a-rectangle-using-mouse-events
+- [ ] 💬 resize/crop option
 
-💬 bugs - 
+💬 bugs  
 - [x] override previous image
 - [x] handle no pic in frame (to classify/crop)
 - [x] handle models not done loading
