@@ -7,9 +7,18 @@ import os
 import numpy as np
 
 
-def predict_label(model, filename):
-    img = tf.io.read_file(filename)
-    img = decode_img(img)
+def predict_label(model, filename, is_path = True):
+
+    img = None
+
+    # Treat filename as a path
+    if is_path:
+        img = tf.io.read_file(filename)
+        img = decode_img(img)
+
+    # Treat filename is an already open image if is_path is false
+    else: img = filename
+
     img = tf.convert_to_tensor(img)
     img = np.expand_dims(img, axis=0)  ## (H, W, C) -> (None, H, W, C)
 
@@ -29,7 +38,7 @@ def load_models(md_list, path):
     return ans
 
 
-def get_all_predictions(loaded_models, filename):
+def get_all_predictions(loaded_models, filename, is_path = True):
     """Input - list of models, filename
        Returns - Dictionary, key - label, value - how many models predicted that key"""
     predictions = {label: 0 for label in LABELS}  ## Count occurence of each prediction
@@ -37,16 +46,22 @@ def get_all_predictions(loaded_models, filename):
 
         guess = predict_label(md, filename)
         predictions[guess] += 1
+        print(f'(md={i}, guess={guess})', end="")
         print(f'.', end="")  ## Show progress, can be commented out
 
     print("")
     return predictions
 
 
-def pred_conf(filepath: str, loaded_models: list):
+def pred_conf(filepath, loaded_models: list, is_path = True):
+    """
+        Filepath - A file path from disk, or an image. If it is an image, make sure is_path is false
+       Loaded_model - List of loaded h5 models
+       is_path - True if the filepath is indeed a path to be opened, or false if an image (To save writing to disk) is given.
+    """
     try:
         print(f'Predicting', end="")  ## end="" dosen't add a new line
-        preds = get_all_predictions(loaded_models, filepath)
+        preds = get_all_predictions(loaded_models, filepath, is_path)
 
         max_label = max(preds, key=preds.get)  ## Get key K with most predictions
         max_val = preds[max_label]  ## with K get value to calculate confidence
