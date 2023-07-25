@@ -2,22 +2,22 @@ import time
 import tensorflow.keras as keras
 from Data import decode_img
 import tensorflow as tf
-from Cons import LABELS, MODELS_PATH
+from Cons import LABELS, MODELS_PATH, IMG_W, IMG_H
 import os
 import numpy as np
 
 
-def predict_label(model, filename, is_path = True):
-
+def predict_label(model, filename, is_path=True):
     img = None
 
     # Treat filename as a path
     if is_path:
         img = tf.io.read_file(filename)
         img = decode_img(img)
-
     # Treat filename is an already open image if is_path is false
-    else: img = filename
+    else:
+        img = filename
+        img = tf.image.resize(img, size=[IMG_H, IMG_W])
 
     img = tf.convert_to_tensor(img)
     img = np.expand_dims(img, axis=0)  ## (H, W, C) -> (None, H, W, C)
@@ -38,13 +38,12 @@ def load_models(md_list, path):
     return ans
 
 
-def get_all_predictions(loaded_models, filename, is_path = True):
+def get_all_predictions(loaded_models, filename, is_path=True):
     """Input - list of models, filename
        Returns - Dictionary, key - label, value - how many models predicted that key"""
     predictions = {label: 0 for label in LABELS}  ## Count occurence of each prediction
     for i, md in enumerate(loaded_models):
-
-        guess = predict_label(md, filename)
+        guess = predict_label(md, filename, is_path)
         predictions[guess] += 1
         print(f'(md={i}, guess={guess})', end="")
         print(f'.', end="")  ## Show progress, can be commented out
@@ -53,7 +52,7 @@ def get_all_predictions(loaded_models, filename, is_path = True):
     return predictions
 
 
-def pred_conf(filepath, loaded_models: list, is_path = True):
+def pred_conf(filepath, loaded_models: list, is_path=True):
     """
         Filepath - A file path from disk, or an image. If it is an image, make sure is_path is false
        Loaded_model - List of loaded h5 models

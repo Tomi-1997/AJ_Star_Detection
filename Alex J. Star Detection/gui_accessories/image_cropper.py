@@ -2,20 +2,30 @@ import tkinter as tk
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
+ctk.set_default_color_theme("green")
+
+
 class ImageCropper:
-    def __init__(self, image_path):
-        self.root = ctk.CTk()
+    def __init__(self, image_path, root):
+        self.root = ctk.CTkToplevel(root)
+        # self.root = ctk.CTk()
         self.root.title("Image Cropper")
-        self.canvas = tk.Canvas(self.root, width=500, height=500)
+        self.root.focus()
+        fg_color = self.root.cget("fg_color")[1]
+        self.canvas = tk.Canvas(self.root, width=500, height=500, bg=fg_color)
         self.canvas.pack()
 
         self.image = Image.open(image_path)
         self.image.thumbnail((500, 500))
         self.photo_image = ImageTk.PhotoImage(self.image)
-        self.canvas.create_image(0, 0, image=self.photo_image, anchor=tk.NW)
+        # width = self.canvas.winfo_width()
+        # height = self.canvas.winfo_height()
+        self.img_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo_image)
 
-        self.crop_button = tk.Button(self.root, text="Crop", command=self.crop_image)
+        self.crop_button = ctk.CTkButton(self.root, text="Crop", command=self.crop_image)
         self.crop_button.pack()
+        self.confirm_button = ctk.CTkButton(self.root, text="Confirm", command=self.confirm_image)
+        self.confirm_button.pack()
 
         self.rect = None
         self.start_x = None
@@ -48,13 +58,23 @@ class ImageCropper:
             cur_y, self.start_y = self.start_y, cur_y
 
         # Crop the image
-        cropped_image = self.image.crop((self.start_x, self.start_y, cur_x, cur_y))
-        cropped_image.show()
+        self.cropped = self.image.crop((self.start_x, self.start_y, cur_x, cur_y))
+        self.cropped_imagetk = ImageTk.PhotoImage(self.cropped)
+        # self.canvas.itemconfig(self.photo_image, image=self.cropped_image)
+        # self.canvas.create_image(250, 250, anchor=tk.CENTER, image=cropped_image)
 
     def crop_image(self):
+        self.canvas.delete(self.rect)
+        self.canvas.itemconfig(self.img_on_canvas, image=self.cropped_imagetk)
+        self.image = self.cropped
         # Disable the crop button
-        self.crop_button.config(state=tk.DISABLED)
+        # self.crop_button.configure(state=tk.DISABLED)
 
-if __name__ == "__main__":
-    image_path = "C:\\Users\\S\\Pictures\\Alexander_Jannaeus.png"
-    image_cropper = ImageCropper(image_path)
+    def confirm_image(self):
+        self.root.withdraw()
+
+# if __name__ == "__main__":
+#     image_path = "D:\\UNI\\FinalProject\\data\\star_side\\6\\K16068.JPG"
+#
+#     image_cropper = ImageCropper(image_path, ctk.CTk)
+#     image_cropper.image.show()
