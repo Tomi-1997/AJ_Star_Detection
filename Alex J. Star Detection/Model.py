@@ -1,3 +1,11 @@
+"""
+Model Library, usages:
+* Training a given model with class weights
+* Defining a fully connected model.
+* Defining a CNN model. (This is what is mainly used)
+* Defining a vgg \ mobile_net model. (Pretrained model)
+"""
+
 from Cons import *
 
 
@@ -80,9 +88,9 @@ def get_FN_model():
 
 def get_CNN_model(conv_num, fil_num, fil_size, opt, activ):
     """Returns a CNN model using tf2 and keras."""
-    z = random.random() * 0.1
+    z = random.random() * 0.01
     z = round(z, 4)
-    reg_str = random.random() * 0.01
+    reg_str = random.random() * 0.001
     reg_str = round(reg_str, 4)
 
     print(f'Random augmentation strength - {z}')
@@ -92,12 +100,14 @@ def get_CNN_model(conv_num, fil_num, fil_size, opt, activ):
     cnn = tf.keras.Sequential()
     cnn.add(layers.RandomRotation(z))
     cnn.add(layers.RandomZoom(z))
-    cnn.add(layers.GaussianNoise(1)) ## maybe lower std to 0.1
+    cnn.add(layers.GaussianNoise(0.2)) ## maybe lower std to 0.1
     # cnn.add(keras.layers.Lambda(find_edges))
 
+    layer = 1
     for _ in range(conv_num):
         cnn.add(Conv2D(fil_num, fil_size, kernel_regularizer = reg, activation = activ))
         cnn.add(MaxPooling2D())
+        layer *= 2
 
     cnn.add(Flatten())
     cnn.add(Dense(len(LABELS), activation='softmax'))

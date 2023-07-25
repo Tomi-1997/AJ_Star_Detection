@@ -1,68 +1,31 @@
+"""
+Data Library, usages:
+* Filepath to tensor.
+* Get batch of data for testing.
+* CSV Updates.
+* Data files transferring. (To and from train or test folders)
+
+"""
+
 import os
 import random
-
 from Cons import *
 
 
-def get_label(file_name):
-    """Returns the label (0, 6 or 8) of a sample"""
-    index = DATA_FILENAME.index(file_name)
-    return DATA_LABEL[index]
-
-
-def get_label_vec(file_name):
-    # Get label from file name.
-    index = DATA_FILENAME.index(file_name)
-    label = DATA_LABEL[index]
-
-    # Convert to a true\false vector.
-    one_hot = [True if l == label else False for l in LABELS]
-    # tf.argmax(one_hot)
-    return one_hot
-
-
-def fname_to_path(fname, test):
-    """Returns the same filename but with a prefix of the path, and a postfix .jpg"""
-    path = TEST_PATH if test else DATA_PATH
-    index = DATA_FILENAME.index(fname)
-    label = DATA_LABEL[index]
-    suffix = fname + '.jpg' if not fname.endswith('.jpg') else fname
-    return f'{path}{label}\\{suffix}'
-
-
 def decode_img(img):
-    """Returns a tensor from a given, resized image"""
+    """Returns a resized tensor (from an image) according to the height and width defined in CONS"""
     img = tf.io.decode_jpeg(img, channels=CHANNELS)
     img = tf.image.convert_image_dtype(img, tf.float32)
     img = tf.image.resize(img, size=[IMG_H, IMG_W])
     return img
 
 
-def tensor_to_image(tensor):
-    """Returns an image from a given tensor"""
-    tensor = tensor * 255
-    tensor = np.array(tensor, dtype=np.uint8)
-    if np.ndim(tensor) > 3:
-        assert tensor.shape[0] == 1
-        tensor = tensor[0]
-    return Image.fromarray(tensor)
-
-
-def image_to_tensor(file_name, test=False):
-    """Attempts to find image, and then returns a tensor from the resized image."""
-    path = fname_to_path(file_name, test)
-    img = tf.io.read_file(path)
-    img = decode_img(img)
-    return img
-
-
-def process_path(file_name, test=False):
-    """Returns a tuple of (Tensor, label) from a given filename."""
-    label = get_label_vec(file_name)
-    return image_to_tensor(file_name, test), label
-
-
 def to_tensor(filepath, label):
+    """
+    :param filepath F:
+    :param label L:
+    :return: A tuple (x, y) x : Resized tensor from F, y : one hot vector of L
+    """
     one_hot = [True if l == label else False for l in LABELS]
     img = tf.io.read_file(filepath)
     img = decode_img(img)
@@ -107,8 +70,8 @@ def get_data(test = False, TEST = None):
 
 def update_csv_by_tag(tag):
     """
-updates csv per tag (0 / 6 / 8) for any additional data
-"""
+    For each unwritten sample in the CSV file, adds it along with it's label.
+    """
     assert (tag == 6 or tag == 0 or tag == 8)
     f_data = []
     f_dir = os.listdir(DATA_PATH + "\\" + tag)
@@ -129,6 +92,7 @@ updates csv per tag (0 / 6 / 8) for any additional data
 
 
 def find_edges(input):
+    """A layer to find edges within an image, (*) currently unused, as CNN layers automatically do it. """
     if "IteratorGetNext" in input.name:
         return input
     sig = 0
@@ -139,6 +103,7 @@ def find_edges(input):
 
 
 def draw_edges(img):
+    """Draws the edges found in the find_edges() function. (*) currently unused. """
     cny = find_edges(img)
     image_copy = Image.copy(img)
     contours, hierarchy = cv2.findContours(cny, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -146,7 +111,10 @@ def draw_edges(img):
 
 
 def move_train_to_dir(num : int, classes : list):
-    """Transfer X images from train directory to test directory, for each given class"""
+    """
+    Transfer X images from train directory to test directory, for each given class.
+    This is done each iteration in order to test which models can predict successfully an unseen image.
+    """
     for label in classes:
 
         pop = os.listdir(DATA_PATH + str(label))
@@ -162,7 +130,11 @@ def move_train_to_dir(num : int, classes : list):
 
 
 def move_all_back(classes : list):
-    """Transfers all images from test directory to train directory for each given class."""
+    """
+    Transfers ALL images from test directory to train directory for each given class.
+    It is important to shuffle what images are defined as train and what are test for each iteration,
+    to diversify the saved models. (Models are saved only if they correctly guess unseen images)
+    """
     for label in classes:
 
         target = os.listdir(TEST_PATH + str(label))
@@ -177,10 +149,3 @@ def move_all_back(classes : list):
             destination = new_path + filename
 
             os.rename(old_file, destination)
-# if __name__ == '__main__':
-#     DATA = pd.read_csv(os.getcwd() + '\\data.csv', sep=SEP)
-#     for did, label in zip(DATA['id'], DATA['rays']):
-#         DATA_FILENAME.append(did)
-#         DATA_LABEL.append(label)
-#
-#     update_csv_by_tag("8")

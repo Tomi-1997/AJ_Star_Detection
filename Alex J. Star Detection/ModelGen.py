@@ -1,6 +1,23 @@
-## Generates many models and saved the best.
+"""
+Model Generation Library, usages:
+* Training a model, with random hyper-parameters*, saving it according to the results.
+* Confusion matrix - visualizing number of mistakes by label.
+* History graph - plot loss and accuracy history.
+
+** Hyper-parameters which are randomized are -
+   - Number of convolutions      (Mainly a lower number, one to three layers)
+   - Filter amount of each layer (4 - 128 by jumps of times 2)
+   - Size of each filter (Mainly 3)
+   - Activation function (Mainly RELU)
+   - Opimizer            (Mainly RMSProp)
+
+Randomness was reduced after analyzing results. Shallow models with a low amount of convolutions,
+Low filter size and a known activation function (ReLU, as opposed to ELU or GELU) succeeded more.
+"""
+
 import os
 
+import keras.activations
 from Data import *
 from Model import *
 from Cons import *
@@ -101,20 +118,21 @@ def show_images(img_list, test = False):
 
 
 def model_generator():
-    conv_nums = [1, 2] #, 3, 4, 5, 7, 8]
-    fil_nums = [2, 4, 8, 16, 32, 64]
-    fil_sizes = [3, 5]
+    conv_nums = [1, 2, 3] #, 4, 5, 7, 8]
+    fil_nums = [2, 4, 8, 16, 32, 64, 128]
+    fil_sizes = [3, 5, 7, 9]
     opts = ['rmsprop', 'ftrl', 'adam', 'sgd']
-    activs = ['relu', 'elu', 'selu', 'gelu']
+    activs = ['relu', keras.activations.leaky_relu, keras.activations.relu6, 'swish']
 
 
     runs = 10000
     counter = len(os.listdir(MODELS_PATH)) ## Count how many models predicted all test photos successfully.
 
     print(f'Starting search for 0-test-mistakes models.')
-    for _ in range(runs):
+    for i in range(runs):
         ## Move random files from train to test
-        move_train_to_dir(2, [0, 6, 8])
+
+        move_train_to_dir(1, [0, 6, 8])
 
         conv_num = random.sample(conv_nums, 1)[0]
         fil_num = random.sample(fil_nums, 1)[0]
@@ -132,13 +150,12 @@ def model_generator():
         failures = confusion_matrix_clf(model, test = True, show = False, log = True)
 
         if len(failures) == 0:
-            model.save(MODELS_PATH + str(counter))
+            model.save(MODELS_PATH + str(counter) + ".h5")
+            print(f'Model number {counter} saved.')
             counter += 1
 
-        del model
-        ## Move them all back
+        ## Move all test samples back, to shuffle and transfer other samples to the test directory.
         move_all_back([0, 6, 8])
-        # show_images(failures, test = True)
 
     return counter, runs
 
@@ -148,7 +165,7 @@ def model_generator():
 #         model.summary1()
 
 if __name__ == '__main__':
-    move_all_back(LABELS)
+    move_all_back(LABELS) ## Run again - changed: batch size 64, weights,
     counter, runs = model_generator()
     print(f'{counter} models saved in {runs} runs.')
 

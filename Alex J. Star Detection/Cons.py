@@ -1,6 +1,14 @@
+"""
+Constants, defines:
+* Data train and test file path.
+* Image height \ width to resize when loading data.
+* Deep learning models constants, such as epochs, train percent, batch sizes.
+
+"""
+
 PATH_TOM = 'C:\\Users\\tomto\\Desktop\\FINAL\\'
 PATH_SON = 'D:\\UNI\\FinalProject\\'
-PATH = PATH_SON
+PATH = PATH_TOM
 # CSV_PATH =
 DATA_PATH = PATH + 'data\\star_side\\'
 TEST_PATH = PATH + 'data\\test\\'
@@ -12,7 +20,7 @@ IMG_H = 64
 IMG_W = IMG_H
 CHANNELS = 3
 
-LABELS = [0, 6, 8]
+LABELS = [0, 6, 8] ## 6, 8 - Coins with six or eight rays, respectively. 0 - Undefined, non 6 or 8, non-ancient or damaged.
 DATA_FILENAME = []
 DATA_LABEL = []
 TEST = []

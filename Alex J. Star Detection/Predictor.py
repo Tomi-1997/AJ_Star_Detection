@@ -1,3 +1,15 @@
+"""
+Prediction Library, usages:
+* Get full prediction and confidence for an unknown image.
+
+It is done by-
+- Loading all models from the '/models/*.h5' directory.
+- Count predictions from each model
+- Return label with most predictions
+- Calculate confidence by amount of models which predicted that label, divided by overall models.
+(e.g. out of 30 models, 20 models predict the label is 8- the outcome is 8 with 66% confidence.)
+"""
+
 import time
 import tensorflow.keras as keras
 from Data import decode_img
