@@ -9,6 +9,8 @@ from tkinterdnd2 import TkinterDnD, DND_FILES
 from Cons import MODELS_PATH
 from PIL import ImageTk, Image
 from Predictor import pred_conf
+from gui_accessories.image_cropper import ImageCropper
+from gui_accessories.help_window import Guide
 
 import threading
 
@@ -28,9 +30,10 @@ class CoinApp(Tk):
         self.title('Alexander Jannaeus Coin Classifier')
         self.geometry('700x600')
         # self.config(bg='gold')
-
+        self.guide = Guide(self)
+        self.main_image = None
         self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure((0, 1), weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
         self.__init_widgets()
 
@@ -43,10 +46,10 @@ class CoinApp(Tk):
 
     def __init_input_frame(self):
         input_frame = ctk.CTkFrame(master=self)
-        input_frame.grid(column=0, row=0, columnspan=2, padx=20, pady=(20, 0), sticky="nsew")
+        input_frame.grid(column=0, row=0, padx=20, pady=(20, 0), sticky="nsew")
         input_frame.grid_rowconfigure(0, weight=1)
         input_frame.grid_rowconfigure(1, weight=5)
-        input_frame.grid_columnconfigure(0, weight=1)
+        input_frame.grid_columnconfigure((0, 2), weight=1)
         input_frame.grid_columnconfigure(1, weight=3)
         self.entry_var = StringVar()
 
@@ -54,9 +57,12 @@ class CoinApp(Tk):
         filename = ctk.CTkEntry(input_frame, textvariable=self.entry_var, width=80, state="disabled")
         self.picture_frame = ctk.CTkFrame(input_frame, height=200)
 
-        self.picture_frame.grid(row=1, column=0, columnspan=2, padx=20, pady=(0, 20), sticky="nsew")
+        self.picture_frame.grid(row=1, column=0, columnspan=3, padx=20, pady=(0, 20), sticky="nsew")
         title_label.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
         filename.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+        self.crop_button = ctk.CTkButton(input_frame, text="Crop", command=self.crop_image)
+        self.crop_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
         filename.drop_target_register(DND_FILES)
         filename.dnd_bind('<<Drop>>', self.drop_image)
@@ -76,16 +82,20 @@ class CoinApp(Tk):
 
     def show_image(self):
         file_name = self.entry_var.get()
+        self.main_image = Image.open(str(file_name))
+        self.update_image()
 
-        image_path = Image.open(str(file_name))
-        image = ctk.CTkImage(light_image=image_path, size=(200, 200))
-        image_label = ctk.CTkLabel(self.picture_frame, image=image, text="")
-        # image_label.image = image
+    def update_image(self):
+        image = self.main_image
+        image.thumbnail((200, 200))
+
+        image_tk = ctk.CTkImage(light_image=image, size=image.size)
+        image_label = ctk.CTkLabel(self.picture_frame, image=image_tk, text="")
         image_label.pack(anchor='center')
 
     def __init_classifier_frame(self):
         classifier_frame = ctk.CTkFrame(self)
-        classifier_frame.grid(column=0, row=1, columnspan=2, padx=20, pady=20, sticky="nsew")
+        classifier_frame.grid(column=0, row=1, padx=20, pady=20, sticky="nsew")
         classifier_frame.grid_rowconfigure(0, weight=1)
         classifier_frame.grid_columnconfigure((0, 1, 2), weight=1)
         self.button_var = StringVar()
@@ -147,8 +157,9 @@ class CoinApp(Tk):
 
     def get_pred(self):
         self.md_progress.start()
-        image_path = self.entry_var.get()
-        guess, conf = pred_conf(image_path, self.loaded_models)
+        # image_path = self.entry_var.get()
+
+        guess, conf = pred_conf(self.main_image, self.loaded_models, is_path=False)
         res = f'{guess} rayed star, Confidence = {conf * 100:.2f}%'
         self.label_var.set(res)
         self.md_progress.stop()
@@ -167,7 +178,18 @@ class CoinApp(Tk):
         file_menu.add_command(label='Open', command=self.__open_file)
         file_menu.add_separator()
         file_menu.add_command(label='Exit', command=self.quit)
-        menubar.add_cascade(label='Help', command=self.help_window)
+        menubar.add_cascade(label='Help', command=self.guide.help_window)
+
+    def crop_image(self):
+        file_path = self.entry_var.get()
+        if file_path:
+            self.main_image = ImageCropper(file_path, self).image
+            self.clear_image()
+            self.update_image()
+
+        else:
+            messagebox.showerror('Error', 'No picture has been uploaded')
+            return
 
     def __open_file(self):
         file_path = filedialog.askopenfilename(title='Select Image File',
@@ -177,37 +199,6 @@ class CoinApp(Tk):
             self.entry_var.set(file_path)
             self.show_image()
 
-    def help_window(self):
-        help_win = ctk.CTkToplevel(self)
-
-        help_win.title("Help")
-        help_win.geometry("400x350")
-        help_win.focus()
-        help_win.grid_rowconfigure(0, weight=1)
-        help_win.grid_rowconfigure(1, weight=4)
-        help_win.grid_rowconfigure(2, weight=2)
-        # help_win.grid_rowconfigure((0, 1, 2), weight=1)
-        help_win.grid_columnconfigure((0, 1), weight=1)
-
-        help_title = ctk.CTkLabel(help_win, text="Here's a guide how to use the program")
-        help_title.grid(column=0, row=0, columnspan=2, padx=10, pady=(5, 0), sticky="nsew")
-
-        text = ctk.CTkTextbox(help_win, wrap="word", height=50)
-        text.insert("0.0", "1. Choose a picture for inspection by one of the options- \n")
-        text.insert("end", "\t • Dragging it onto the window \n \t • file > open\n")
-        text.insert("end", "2. Edit the picture by cropping the star side like below if needed\n")
-        text.insert("end", "3. Press the classify button \n")
-        text.insert("end", "4. A label will appear with the approximate probability\n")
-        text.configure(state="disabled")
-        text.grid(row=1, column=0, padx=10, columnspan=2, pady=(5, 0), sticky="nsew")
-
-        file_name = "gui_accessories/cropped_eg.jpg"
-        image_path = Image.open(file_name)
-        image = ctk.CTkImage(light_image=image_path, size=(100, 100))
-        image_label = ctk.CTkLabel(help_win, image=image, text="")
-        image_label.grid(row=2, column=1, padx=10, pady=(0, 10), sticky="ew")
-        eg_label = ctk.CTkLabel(help_win, text="cropped example")
-        eg_label.grid(row=2, column=0, padx=10, pady=(5, 0), sticky="e")
 
 
 if __name__ == '__main__':
