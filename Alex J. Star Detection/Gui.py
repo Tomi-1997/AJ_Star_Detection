@@ -94,6 +94,7 @@ class CoinApp(Tk):
         image_label.pack(anchor='center')
 
     def __init_classifier_frame(self):
+        """includes the prediction functions"""
         classifier_frame = ctk.CTkFrame(self)
         classifier_frame.grid(column=0, row=1, padx=20, pady=20, sticky="nsew")
         classifier_frame.grid_rowconfigure(0, weight=1)
@@ -183,8 +184,9 @@ class CoinApp(Tk):
     def crop_image(self):
         file_path = self.entry_var.get()
         if file_path:
-            self.main_image = ImageCropper(file_path, self).image
             self.clear_image()
+            cropper = ImageCropper(file_path)
+            self.main_image = cropper.confirm_image()
             self.update_image()
 
         else:
