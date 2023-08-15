@@ -41,17 +41,8 @@ def get_data(test = False, TEST = None):
     y = []
 
     path = TEST_PATH if test else DATA_PATH
-    #
-    # if len(TEST) == 0:  # Test list is not initialized
-    #     f0 = os.listdir(DATA_PATH + "\\0")
-    #     f6 = os.listdir(DATA_PATH + "\\6")
-    #     f8 = os.listdir(DATA_PATH + "\\8")
-    #     train_files = f0 + f6 + f8
-    #     for fname in DATA_FILENAME:
-    #         if fname + '.jpg' not in train_files:
-    #             TEST.append(fname)
-
     src = TEST_PATH if test else DATA_FILENAME
+
     for label in os.listdir(src):
         for filename in os.listdir(src + "\\" + label):
             if filename.endswith(".ini"): continue
