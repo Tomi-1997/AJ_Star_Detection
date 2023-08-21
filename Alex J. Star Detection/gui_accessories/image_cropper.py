@@ -1,7 +1,7 @@
 import tkinter as tk
 import customtkinter as ctk
 from PIL import Image, ImageTk
-
+from tkinter import messagebox
 dimension = 500
 ctk.set_default_color_theme("green")
 """
@@ -13,6 +13,7 @@ class ImageCropper(ctk.CTkToplevel):
     def __init__(self, image_path):
         super().__init__()
         self.create_window(image_path)
+        self.cropped = None
 
     def create_window(self, image_path):
         self.title("Image Cropper")
@@ -64,6 +65,7 @@ class ImageCropper(ctk.CTkToplevel):
         self.canvas.coords(self.rect, self.start_x, self.start_y, cur_x, cur_y)
 
     def confirm_rect(self, event):
+
         cur_x = event.x
         cur_y = event.y
 
@@ -78,6 +80,9 @@ class ImageCropper(ctk.CTkToplevel):
         self.cropped_imagetk = ImageTk.PhotoImage(self.cropped)
 
     def crop_image(self):
+        if not self.cropped:
+            messagebox.showerror('Error', 'No bounds found')
+            return
         self.canvas.delete(self.rect)
         self.set_image(self.cropped)
         self.photo_image = self.cropped_imagetk

@@ -28,8 +28,9 @@ drag file into and get prediction based on Predictor.py <br>
 ✅ Gui additional stuff
 - [x] resize/crop option
 
-💬 bugs  
+💬? bugs  
 - [x] override previous image
 - [x] handle no pic in frame (to classify/crop)
 - [x] handle models not done loading
-- [ ] handle cropping without bounds
+- [x] handle multiple bounds 
+- [x] handle cropping without bounds
