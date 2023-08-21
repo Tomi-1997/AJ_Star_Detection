@@ -12,9 +12,8 @@ It is done by-
 
 import time
 import tensorflow.keras as keras
-from Data import decode_img
 import tensorflow as tf
-from Cons import LABELS, MODELS_PATH, IMG_W, IMG_H
+from Cons import LABELS, MODELS_PATH, IMG_W, IMG_H, CHANNELS
 import os
 import numpy as np
 
@@ -32,14 +31,18 @@ def predict_label(model, filename, is_path=True):
     # Treat filename as a path
     if is_path:
         img = tf.io.read_file(filename)
-        img = decode_img(img)
+        img = tf.io.decode_jpeg(img, channels=CHANNELS)
 
     # Treat filename is an already open image if is_path is false
     else:
         img = filename
-        img = tf.image.resize(img, size=[IMG_H, IMG_W])
 
+    img = tf.image.convert_image_dtype(img, tf.float32)
+    img = tf.image.resize(img, size=[IMG_H, IMG_W])
     img = tf.convert_to_tensor(img)
+
+    img = img[:, :, :3] # Slice 4th channel which some extension have
+
     img = np.expand_dims(img, axis=0)  ## (H, W, C) -> (None, H, W, C)
 
     res = model.predict(img, verbose=0)
@@ -71,7 +74,7 @@ def get_all_predictions(loaded_models, filename, is_path=True):
     for i, md in enumerate(loaded_models):
         guess = predict_label(md, filename, is_path)
         predictions[guess] += 1
-        print(f'(md={i}, guess={guess})', end="")
+        # print(f'(md={i}, guess={guess})', end="") ## Show prediciton of each model, can be commented out
         print(f'.', end="")  ## Show progress, can be commented out
 
     print("")
