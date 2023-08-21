@@ -1,0 +1,7 @@
+ 1. draw the bounds you'd like to crop using the mouse
+ 2. Click the crop button to confirm the bounds
+    * it is possible to repeat the process if needed
+ 3. Press confirm when done.
+
+* If you want to start over, exit the crop window.
+* Upon entering the crop window the image is reset to the original.

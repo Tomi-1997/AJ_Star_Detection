@@ -50,6 +50,10 @@ class ImageCropper(ctk.CTkToplevel):
         self.photo_image = ImageTk.PhotoImage(temp)
 
     def start_rect(self, event):
+        if self.rect:
+            self.canvas.delete(self.rect)
+            self.start_y = None
+            self.start_x = None
         self.start_x = event.x
         self.start_y = event.y
         self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, 1, 1, outline='red')

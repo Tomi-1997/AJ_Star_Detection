@@ -1,0 +1,6 @@
+1. Choose a picture for inspection by one of the options-
+    * Dragging it onto the window
+    * file > open
+2. Edit the picture by cropping the star side like below if needed
+3. Press the classify button
+4. A label will appear with the approximate probability

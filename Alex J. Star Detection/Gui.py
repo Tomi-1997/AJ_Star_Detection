@@ -30,8 +30,9 @@ class CoinApp(Tk):
         self.title('Alexander Jannaeus Coin Classifier')
         self.geometry('700x600')
         # self.config(bg='gold')
-        self.guide = Guide(self)
+        # self.guide = Guide()
         self.main_image = None
+        self.cropper = None
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -61,7 +62,7 @@ class CoinApp(Tk):
         title_label.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
         filename.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
-        self.crop_button = ctk.CTkButton(input_frame, text="Crop", command=self.crop_image)
+        self.crop_button = ctk.CTkButton(input_frame, text="Crop Image", command=self.crop_image)
         self.crop_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
         filename.drop_target_register(DND_FILES)
@@ -179,15 +180,22 @@ class CoinApp(Tk):
         file_menu.add_command(label='Open', command=self.__open_file)
         file_menu.add_separator()
         file_menu.add_command(label='Exit', command=self.quit)
-        menubar.add_cascade(label='Help', command=self.guide.help_window)
+        menubar.add_cascade(label='Help', command=Guide)
 
     def crop_image(self):
         file_path = self.entry_var.get()
+        if self.cropper is not None:
+            messagebox.showerror('Error', 'Crop window is already open')
+            return
+
         if file_path:
             self.clear_image()
-            cropper = ImageCropper(file_path)
-            self.main_image = cropper.confirm_image()
+            self.cropper = ImageCropper(file_path)
+            self.main_image = self.cropper.confirm_image()
             self.update_image()
+            # ensure only one cropper can be opened
+            self.cropper.destroy()
+            self.cropper = None
 
         else:
             messagebox.showerror('Error', 'No picture has been uploaded')
