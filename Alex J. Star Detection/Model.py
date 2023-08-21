@@ -10,6 +10,11 @@ from Cons import *
 
 
 def train_model(model, w):
+    """
+    :param model: A deep learning model
+    :param w: A set of weights
+    :return: Returns the history of the model after training for a a set amount of epochs set in CONS
+    """
     train, validate = keras.utils.image_dataset_from_directory(DATA_PATH,
                                                                shuffle = False,
                                                                image_size = (IMG_H, IMG_W),
@@ -29,10 +34,14 @@ def train_model(model, w):
 
 
 def mobile_net():
+    """
+
+    :return: Pretrained model with all frozen layers but the last two.
+    """
     IMG_H = 224
     IMG_W = IMG_H
     # https://keras.io/api/applications/#usage-examples-for-image-classification-models
-    # MobileNet was chosen due to small depth and small number of parameters.
+    # MobileNet was chosen to be tested due to small depth and small number of parameters.
     from keras.applications.mobilenet import MobileNet
     input_layer = Input((IMG_H, IMG_W, CHANNELS), name='input_layer')
     incep_res = MobileNet(include_top=False, weights='imagenet', input_tensor=input_layer)
@@ -63,7 +72,10 @@ def mobile_net():
 
 
 def get_FN_model():
-    """Returns a FN model using tf2 and keras."""
+    """
+
+    :return: A fully connected model (Dense layers connected to each other)
+    """
     z = 0.01
     reg = None # regularizers.l2(0.0001)
 
@@ -87,7 +99,15 @@ def get_FN_model():
 
 
 def get_CNN_model(conv_num, fil_num, fil_size, opt, activ):
-    """Returns a CNN model using tf2 and keras."""
+    """
+
+    :param conv_num: Amount of convolutions before the final softmax activation.
+    :param fil_num: For each convolution, sets the amount of filters.
+    :param fil_size: For all convolutions layers, set this as the filter size. (should be around 3 - 9)
+    :param opt: Sets the optimizer for updating the weights
+    :param activ: Activation function of each layer.
+    :return: The defined model
+    """
     z = random.random() * 0.01
     z = round(z, 4)
     reg_str = random.random() * 0.001
@@ -100,8 +120,7 @@ def get_CNN_model(conv_num, fil_num, fil_size, opt, activ):
     cnn = tf.keras.Sequential()
     cnn.add(layers.RandomRotation(z))
     cnn.add(layers.RandomZoom(z))
-    cnn.add(layers.GaussianNoise(0.2)) ## maybe lower std to 0.1
-    # cnn.add(keras.layers.Lambda(find_edges))
+    cnn.add(layers.GaussianNoise(0.2))
 
     layer = 1
     for _ in range(conv_num):
@@ -111,24 +130,6 @@ def get_CNN_model(conv_num, fil_num, fil_size, opt, activ):
 
     cnn.add(Flatten())
     cnn.add(Dense(len(LABELS), activation='softmax'))
-
-    # cnn = tf.keras.Sequential([
-    #     layers.Lambda(find_edges),
-    #     layers.RandomContrast(z),
-    #     layers.RandomZoom(z),
-    #     layers.RandomBrightness(factor=z),
-    #     layers.RandomRotation(factor=(-z, z)),
-    #     layers.RandomTranslation((-z, z), (-z, z)),
-    #
-    #     for _ in range(conv_num):
-    #         Conv2D(32, 3, activation='relu'),
-    #         MaxPooling2D(),
-    #         Flatten(),
-    #
-    #     layers.Dense(64, activation='relu', kernel_regularizer = reg),
-    #     Dropout(0.5),
-    #     Dense(len(LABELS), activation='softmax')
-    # ])
 
     cnn.compile(optimizer=opt,
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(),
@@ -142,6 +143,10 @@ https://towardsdatascience.com/transfer-learning-in-tensorflow-9e4f7eae3bb4
 
 """
 def get_vgg_model():
+    """
+
+    :return: Pretrained model with all but the last Dense layer frozen.
+    """
     from keras.applications import VGG19
     vgg19 = VGG19(weights='imagenet', include_top=False,
                   input_shape=(IMG_H, IMG_W, CHANNELS), classes=len(LABELS))

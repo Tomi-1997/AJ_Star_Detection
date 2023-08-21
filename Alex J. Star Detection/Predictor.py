@@ -20,12 +20,20 @@ import numpy as np
 
 
 def predict_label(model, filename, is_path=True):
+    """
+
+    :param model: Model to predict label of image
+    :param filename: Image object \ path, depends on the next variable
+    :param is_path:
+    :return: Prediction of a given image
+    """
     img = None
 
     # Treat filename as a path
     if is_path:
         img = tf.io.read_file(filename)
         img = decode_img(img)
+
     # Treat filename is an already open image if is_path is false
     else:
         img = filename
@@ -41,6 +49,12 @@ def predict_label(model, filename, is_path=True):
 
 
 def load_models(md_list, path):
+    """
+
+    :param md_list: List of model strings
+    :param path: Path of models to load from
+    :return: a list of loaded models
+    """
     ans = []
     for md in md_list:
         if not md[0].isdigit(): continue
@@ -86,6 +100,12 @@ def pred_conf(filepath, loaded_models: list, is_path=True):
 
 
 def save_as_H5(md_list):
+    """
+        Incase of models saved not as H5 (More efficient format of models, faster to load and takes less space)
+        Loads not H5 models and saves as H5.
+    :param md_list:
+    :return:
+    """
     for md in md_list:
         if 'ignore' in md: continue
         model = keras.models.load_model(MODELS_PATH + str(md))
@@ -97,13 +117,7 @@ if __name__ == '__main__':
 
     print("Loading all models.")
     models = os.listdir(MODELS_PATH)
-    # save_as_H5(models)
-    # start = time.time()
-    # models = os.listdir(MODELS_PATH)
     loaded_models = load_models(models, path=MODELS_PATH)
-    # end = time.time()
-    # print(end - start)
-    # model = keras.models.load_model(MODELS_PATH + 0)
 
     while True:
         print(f'Enter a file name if it is in the same directory, or the path.')

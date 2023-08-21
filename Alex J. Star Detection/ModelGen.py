@@ -27,11 +27,14 @@ for id, label in zip(DATA['id'], DATA['rays']):
     DATA_FILENAME.append(id)
     DATA_LABEL.append(label)
 
-# Compute class weights and turn into a dict.
+"""
+    Class weights - each class penalizes for a mistake. But a class with less samples (e.g the six-rays)
+    will bear a heavier penalty for a mistake.
+"""
 weights = sklearn.utils.class_weight.compute_class_weight(class_weight = 'balanced',
                                                           classes = np.unique(DATA_LABEL),
                                                           y = DATA_LABEL)
-weights = {i : weights[i] for i in range(len(weights))}
+weights = {i : weights[i] for i in range(len(weights))} # Convert to a dictionary to be compatible with keras.
 
 
 def plot_history(history):
@@ -57,21 +60,15 @@ def plot_history(history):
     plt.show()
 
 
-def predict(model, fname, star = True, test = False):
-    test_img = [image_to_tensor(fname, test)]
-    res = model.predict(tf.convert_to_tensor(test_img), verbose=0)
-    ans = res.argmax(axis=-1)[0]
-    print(res)
-    print(f'Guess : {LABELS[ans]} rays.')
-
-
 def confusion_matrix_clf(model, test = False, show = True, log = False):
-    """Test - False
-        Makes a prediction on the whole data set from 'data.csv' and plots a matrix depicting the model's choices
-        Test - True
-        Makes prediction on all images from test folders."""
-
-    TEST = []
+    """
+    
+    :param model: Model to analyze
+    :param test: TRUE - will take samples from test directory, FALSE - will take from training
+    :param show: Plot the confusion matrix
+    :param log: Output to console the results with probabiltiies from the softmax activation
+    :return: 
+    """TEST = []
     x, y = get_data(test, TEST)
     src = TEST if test else DATA_FILENAME
 
@@ -109,6 +106,11 @@ def confusion_matrix_clf(model, test = False, show = True, log = False):
 
 
 def show_images(img_list, test = False):
+    """
+    :param img_list: List of images to be shown one after the other
+    :param test: Take from test directory or training directory
+    :return:
+    """
     path = TEST_PATH if test else DATA_PATH
     for img in img_list:
         curr_dir = path + str(get_label(img)) + "\\"
@@ -118,6 +120,15 @@ def show_images(img_list, test = False):
 
 
 def model_generator():
+    """
+    From i = 0 to n does:
+        Generates a model with random parameters.
+        Runs the model for a defined amount of epochs.
+        Tests the model on untrained images.
+        Outputs information to screen.
+        Saves the model if it predicted all the test images correctly.
+    :return: Amount of saved models overall, iterations ran
+    """
     conv_nums = [1, 2, 3] #, 4, 5, 7, 8]
     fil_nums = [2, 4, 8, 16, 32, 64, 128]
     fil_sizes = [3, 5, 7, 9]
@@ -159,10 +170,6 @@ def model_generator():
 
     return counter, runs
 
-# def get_model_summary(range):
-#     for i in range(runs):
-#         model = keras.models.load_model(MODELS_PATH + str(i))
-#         model.summary1()
 
 if __name__ == '__main__':
     move_all_back(LABELS) ## Run again - changed: batch size 64, weights,
